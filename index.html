@@ -1,0 +1,2577 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="color-scheme" content="dark light">
+    <title>Solitude - Private Solo Video Space</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg-app: #09090d;
+            --bg-card: #13131c;
+            --bg-elevated: #1b1a27;
+            --border-subtle: rgba(168, 85, 247, 0.22);
+            --text-primary: #f4f4f6;
+            --text-muted: #a1a1aa;
+            --accent: #a855f7;
+            --accent-soft: #c084fc;
+        }
+
+        html.light {
+            color-scheme: light;
+            --bg-app: #f7f6fb;
+            --bg-card: #ffffff;
+            --bg-elevated: #efeaf8;
+            --border-subtle: rgba(126, 34, 206, 0.22);
+            --text-primary: #14121d;
+            --text-muted: #52525b;
+            --accent: #7e22ce;
+            --accent-soft: #9333ea;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #050508;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            overscroll-behavior: contain;
+        }
+
+        /* Non-selectable UI controls vs selectable user copy */
+        nav, button, [role="button"], svg, .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        .selectable-text {
+            user-select: text;
+            -webkit-user-select: text;
+            -webkit-touch-callout: default;
+        }
+
+        /* Safe Area Insets */
+        .pt-safe {
+            padding-top: max(14px, env(safe-area-inset-top));
+        }
+        .pb-safe {
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+        }
+
+        /* Smooth View Transition (respects prefers-reduced-motion) */
+        .tab-view-enter {
+            animation: tabFadeSlide 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes tabFadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .tab-view-enter,
+            .animate-vinyl,
+            .floating-heart,
+            .marquee-track {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+
+        /* Vertical Snap Feed */
+        .feed-scroll {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            overscroll-behavior-y: contain;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .feed-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .video-slide {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            height: 100%;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Light Mode Overrides for Non-Feed Surfaces */
+        html.light #app-shell {
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+        }
+        html.light .surface-page {
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+        }
+        html.light .surface-card {
+            background-color: var(--bg-card);
+            border-color: var(--border-subtle);
+            color: var(--text-primary);
+        }
+        html.light .surface-input {
+            background-color: var(--bg-elevated);
+            border-color: var(--border-subtle);
+            color: var(--text-primary);
+        }
+        html.light .text-adaptive-main {
+            color: #14121d;
+        }
+        html.light .text-adaptive-muted {
+            color: #52525b;
+        }
+
+        /* Animations */
+        @keyframes spinVinyl {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-vinyl {
+            animation: spinVinyl 7s linear infinite;
+        }
+        .paused-vinyl {
+            animation-play-state: paused;
+        }
+
+        @keyframes floatPurpleHeart {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(0.75) rotate(-8deg);
+            }
+            50% {
+                opacity: 0.95;
+                transform: translateY(-48px) scale(1.15) rotate(8deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-98px) scale(0.9) rotate(-4deg);
+            }
+        }
+        .floating-heart {
+            position: absolute;
+            pointer-events: none;
+            animation: floatPurpleHeart 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            z-index: 35;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+        .marquee-track {
+            display: inline-flex;
+            white-space: nowrap;
+            animation: marquee 11s linear infinite;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Video Filter Presets */
+        .filter-normal { filter: none; }
+        .filter-purple { filter: contrast(1.04) saturate(1.15) hue-rotate(-14deg) brightness(1.03); }
+        .filter-dusk { filter: sepia(0.22) saturate(1.25) contrast(1.05) brightness(0.98); }
+        .filter-midnight { filter: brightness(0.88) contrast(1.18) saturate(0.9) hue-rotate(12deg); }
+        .filter-cozy { filter: contrast(0.95) brightness(1.07) saturate(1.1); }
+        .enhance-glow { filter: brightness(1.08) contrast(1.03) saturate(1.08); }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-[100dvh] bg-[#050508]">
+
+    <!-- Mobile App Shell -->
+    <div id="app-shell" class="w-full max-w-[430px] h-[100dvh] bg-[#09090d] text-white overflow-hidden relative flex flex-col sm:border-x sm:border-purple-500/20 shadow-[0_0_70px_rgba(139,92,246,0.12)]">
+
+        <!-- Pull-to-Refresh Pill Indicator -->
+        <div id="ptr-indicator" class="pointer-events-none absolute top-14 left-1/2 -translate-x-1/2 z-40 opacity-0 transition-opacity duration-150 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#161522]/95 border border-purple-400/35 text-xs font-semibold text-purple-200 shadow-lg">
+            <svg id="ptr-spinner" class="w-4 h-4 text-purple-400 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+            <span id="ptr-label">Pull to refresh</span>
+        </div>
+
+        <!-- Top Header Overlay (Home Feed Root) -->
+        <header id="top-header" class="absolute top-0 inset-x-0 z-30 pt-safe pb-5 px-4 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex items-center justify-between pointer-events-none">
+            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/20 backdrop-blur-md border border-purple-400/30 pointer-events-auto">
+                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                <span id="header-session-label" class="text-xs font-semibold tracking-wide text-purple-200">SOLO</span>
+            </div>
+
+            <div class="flex items-center gap-4 pointer-events-auto">
+                <span class="text-xs font-medium text-zinc-300">Solitude</span>
+                <div class="flex flex-col items-center">
+                    <span class="text-base font-bold tracking-tight text-white drop-shadow">For You</span>
+                    <div class="w-6 h-0.5 bg-purple-400 rounded-full mt-1 shadow-[0_0_8px_#c084fc]"></div>
+                </div>
+            </div>
+
+            <button onclick="toggleGlobalMute()" id="global-mute-btn" aria-label="Toggle Feed Audio" class="w-11 h-11 rounded-full bg-[#13131c]/85 backdrop-blur-md border border-purple-400/25 flex items-center justify-center text-purple-200 pointer-events-auto active:scale-90 transition">
+            </button>
+        </header>
+
+        <!-- ==================== TAB 1: HOME FEED ==================== -->
+        <main id="view-home" class="flex-1 w-full h-full relative">
+            <div id="feed-container" class="feed-scroll w-full h-full pb-[72px]">
+                <!-- Video slides injected here -->
+            </div>
+
+            <!-- Empty Feed State -->
+            <div id="empty-state" class="hidden absolute inset-0 pb-[72px] z-20 flex flex-col items-center justify-center px-8 text-center bg-gradient-to-b from-[#09090d] via-[#0d0c14] to-[#09090d]">
+                <div class="w-20 h-20 rounded-3xl bg-[#13131c] border border-purple-500/25 flex items-center justify-center mb-5 shadow-[0_0_30px_rgba(168,85,247,0.15)]">
+                    <svg class="w-9 h-9 text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-white tracking-tight mb-2">Nothing here yet</h2>
+                <p class="text-sm text-zinc-300 leading-relaxed mb-6">
+                    This space belongs strictly to <span id="empty-handle-label" class="text-purple-300 font-semibold">@quiet.orbit</span>. Nobody else can join, view, or hear anything you film here.
+                </p>
+                <button onclick="openCameraStudio()" aria-label="Film Your First Moment" class="min-h-[44px] px-6 py-3 rounded-full bg-purple-500 hover:bg-purple-400 text-zinc-950 font-bold text-sm active:scale-95 transition flex items-center gap-2 shadow-[0_0_24px_rgba(168,85,247,0.35)]">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+                    </svg>
+                    <span>Film Your First Moment</span>
+                </button>
+            </div>
+        </main>
+
+        <!-- ==================== TAB 2: NOW (CALM CHECK-IN) ==================== -->
+        <section id="view-now" class="hidden surface-page flex-1 w-full h-full bg-[#09090d] overflow-y-auto overscroll-y-contain pb-24 pt-safe px-5 no-scrollbar">
+            <div class="flex items-center justify-between mb-6 pt-2">
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-adaptive-main">Solitude Now</h1>
+                    <p class="text-xs text-zinc-400 text-adaptive-muted mt-0.5">Low-key daily check-in • Zero pressure</p>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-purple-500/15 border border-purple-400/25 text-xs font-semibold text-purple-300">Private</span>
+            </div>
+
+            <!-- Cozy Prompt Card -->
+            <div class="surface-card p-5 rounded-3xl bg-gradient-to-br from-[#161522] to-[#111019] border border-purple-500/25 shadow-lg mb-5">
+                <div class="flex items-center gap-2 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    <span>Today's Gentle Prompt</span>
+                </div>
+                <p id="daily-prompt-text" class="selectable-text text-sm font-semibold text-white text-adaptive-main leading-relaxed mb-4">
+                    "Film 5 seconds of whatever is nearest to you right now—a mug, a window, or just your ceiling."
+                </p>
+                <div class="flex items-center gap-2.5">
+                    <button onclick="openCameraStudio()" aria-label="Capture Now" class="flex-1 min-h-[44px] py-2.5 px-4 rounded-xl bg-purple-500 hover:bg-purple-400 text-zinc-950 font-bold text-xs transition active:scale-95">
+                        Capture Now
+                    </button>
+                    <button onclick="cycleDailyPrompt()" aria-label="Generate New Prompt" class="min-h-[44px] py-2.5 px-4 rounded-xl bg-[#1d1c2b] border border-purple-500/25 text-purple-200 text-xs font-semibold hover:bg-purple-500/20 transition">
+                        New Prompt
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ambient Soundscape Player -->
+            <div class="surface-card p-4 rounded-2xl bg-[#13131c] border border-zinc-800/80 mb-5">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-zinc-200 text-adaptive-main">Ambient Background Hum</h3>
+                        <p class="text-xs text-zinc-400 text-adaptive-muted mt-0.5">Soft warm chord drone while you browse</p>
+                    </div>
+                    <button id="ambient-drone-btn" onclick="toggleAmbientDrone()" aria-label="Toggle Ambient Soundscape" class="min-h-[44px] px-4 py-2 rounded-xl bg-purple-500/20 border border-purple-400/30 text-purple-200 text-xs font-bold hover:bg-purple-500/30 transition">
+                        Play Hum
+                    </button>
+                </div>
+            </div>
+
+            <!-- Appearance Theme Card (Dark / Light) -->
+            <div class="surface-card p-4 rounded-2xl bg-[#13131c] border border-zinc-800/80 mb-5">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-zinc-200 text-adaptive-main">Appearance Theme</h3>
+                        <p class="text-xs text-zinc-400 text-adaptive-muted mt-0.5">Soft lavender-purple dark or light mode</p>
+                    </div>
+                    <button id="theme-toggle-btn" onclick="toggleAppTheme()" aria-label="Toggle Dark or Light Theme" class="min-h-[44px] px-4 py-2 rounded-xl bg-purple-500/20 border border-purple-400/30 text-purple-200 text-xs font-bold hover:bg-purple-500/30 transition">
+                        Dark Mode
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calm Guarantee -->
+            <div class="surface-card p-4 rounded-2xl bg-[#13131c] border border-zinc-800/80 space-y-2">
+                <h3 class="text-sm font-bold text-zinc-300 text-adaptive-main">Why Solitude is Quiet</h3>
+                <p class="text-sm text-zinc-400 text-adaptive-muted leading-relaxed">
+                    No strangers watching and no algorithm stress. Only your own videos and friendly AI bots leaving cozy remarks.
+                </p>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: INBOX (SUPPORTIVE AI ACTIVITY) ==================== -->
+        <section id="view-inbox" class="hidden surface-page flex-1 w-full h-full bg-[#09090d] overflow-y-auto overscroll-y-contain pb-24 pt-safe px-5 no-scrollbar">
+            <div class="flex items-center justify-between mb-5 pt-2">
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-adaptive-main">Quiet Inbox</h1>
+                    <p class="text-xs text-zinc-400 text-adaptive-muted mt-0.5">Low-key notes from your supportive AI bots</p>
+                </div>
+                <button onclick="triggerManualAIComment()" aria-label="Request AI Check-in Comment" class="min-h-[44px] px-3.5 py-2 rounded-full bg-purple-500/20 border border-purple-400/30 text-xs font-semibold text-purple-200 hover:bg-purple-500/30 active:scale-95 transition">
+                    + AI Check-in
+                </button>
+            </div>
+
+            <div id="inbox-list" class="space-y-3">
+                <!-- Inbox notifications injected here -->
+            </div>
+        </section>
+
+        <!-- ==================== TAB 5: ME (CHANNEL, SUBSCRIBERS, 137B LIKES, ACCOUNT & VIDEOS) ==================== -->
+        <section id="view-me" class="hidden surface-page flex-1 w-full h-full bg-[#09090d] overflow-y-auto overscroll-y-contain pb-24 pt-safe px-5 no-scrollbar">
+            <!-- Me Root Stack -->
+            <div id="me-root-stack">
+                <div class="flex items-center justify-between mb-4 pt-2">
+                    <span class="text-xs font-mono px-3 py-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-400/25">Private Channel</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openAccountSubpage()" aria-label="Open Account and Privacy Settings" class="min-h-[44px] px-3.5 py-2 rounded-full bg-[#13131c] border border-purple-400/25 text-xs font-semibold text-zinc-200 hover:bg-purple-500/20 transition">
+                            Account
+                        </button>
+                        <button onclick="openEditProfileModal()" aria-label="Edit Channel Name Handle and Picture" class="min-h-[44px] px-3.5 py-2 rounded-full bg-purple-500 text-zinc-950 text-xs font-bold hover:bg-purple-400 transition">
+                            Edit Profile
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Avatar, Display Name & Handle Header -->
+                <div class="flex flex-col items-center text-center mb-5">
+                    <div onclick="openEditProfileModal()" role="button" tabindex="0" aria-label="Change Profile Picture" class="relative cursor-pointer group mb-3">
+                        <div class="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-purple-500 via-fuchsia-400 to-indigo-400 shadow-[0_0_25px_rgba(168,85,247,0.3)]">
+                            <div id="me-avatar-container" class="w-full h-full rounded-full bg-[#13131c] overflow-hidden flex items-center justify-center">
+                                <!-- Avatar img or default SVG -->
+                            </div>
+                        </div>
+                        <div class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-purple-500 text-zinc-950 flex items-center justify-center border-2 border-[#09090d] shadow">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <h2 id="me-name-display" class="text-xl font-extrabold text-white text-adaptive-main tracking-tight">Quiet Orbit</h2>
+                    <p id="me-handle-display" class="text-xs font-semibold text-purple-300 mt-0.5">@quiet.orbit</p>
+                    <p id="me-bio-display" class="selectable-text text-sm text-zinc-400 text-adaptive-muted mt-1.5 max-w-xs">Just filming small moments for myself.</p>
+
+                    <!-- Stats Row: Subscribers (993,944,204) | Likes (137B+) | Videos -->
+                    <div class="surface-card grid grid-cols-3 gap-2 mt-5 py-3.5 px-3 rounded-2xl bg-[#13131c] border border-purple-500/20 w-full">
+                        <div>
+                            <div id="me-stat-subs" class="text-base font-extrabold text-white text-adaptive-main">993,944,204</div>
+                            <div class="text-xs text-zinc-400 text-adaptive-muted mt-0.5">Subscribers</div>
+                        </div>
+                        <div class="border-x border-zinc-800/80 px-1">
+                            <div id="me-stat-likes" class="text-base font-extrabold text-purple-300">137,000,000,000</div>
+                            <div class="text-xs text-zinc-400 text-adaptive-muted mt-0.5">Likes (+18-37/s)</div>
+                        </div>
+                        <div>
+                            <div id="me-stat-posts" class="text-base font-extrabold text-fuchsia-300">0</div>
+                            <div class="text-xs text-zinc-400 text-adaptive-muted mt-0.5">Videos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Videos Grid (Tap to Reopen Video, Trash Icon to Delete) -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 text-adaptive-muted">Your Private Clips (Tap to Open)</h3>
+                        <button onclick="openCameraStudio()" aria-label="Film New Video" class="text-xs font-bold text-purple-300 hover:underline py-1 px-2">
+                            + Film More
+                        </button>
+                    </div>
+                    <div id="me-grid" class="grid grid-cols-3 gap-2">
+                        <!-- Thumbnails injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Me Sub-Route: Account & Privacy Page (with Back Button + Delete Account) -->
+            <div id="me-account-subpage" class="hidden space-y-5 pt-2">
+                <!-- Sub-page Back Header -->
+                <div class="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+                    <button onclick="closeAccountSubpage()" aria-label="Back to Channel" class="min-h-[44px] min-w-[44px] -ml-2 px-2 flex items-center gap-1.5 text-sm font-bold text-purple-300 active:scale-95 transition">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span>Back</span>
+                    </button>
+                    <h2 class="text-base font-bold text-adaptive-main">Account & Privacy</h2>
+                    <div class="w-11"></div>
+                </div>
+
+                <!-- Session Isolation Switcher -->
+                <div class="surface-card p-4 rounded-2xl bg-[#13131c] border border-purple-500/20 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-purple-300">Solo Space Isolation</h3>
+                        <span id="me-session-badge" class="text-xs font-mono text-zinc-400"></span>
+                    </div>
+                    <p class="text-sm text-zinc-400 text-adaptive-muted leading-relaxed">
+                        Test what happens when a different person opens the app: they get a blank feed and cannot see or hear your videos.
+                    </p>
+                    <div class="flex gap-2 pt-1">
+                        <button onclick="createNewIsolatedSession()" aria-label="Simulate Different Person Session" class="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-purple-500 text-zinc-950 font-bold text-xs hover:bg-purple-400 active:scale-95 transition">
+                            + Different Person
+                        </button>
+                        <select id="session-switcher" aria-label="Switch Active User Session" onchange="switchSession(this.value)" class="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-[#09090d] surface-input border border-purple-500/25 text-xs font-mono text-zinc-200 focus:outline-none">
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Danger Zone: Delete Account Flow -->
+                <div class="surface-card p-4 rounded-2xl bg-[#13131c] border border-rose-500/30 space-y-3">
+                    <h3 class="text-sm font-bold text-rose-400">Delete Account</h3>
+                    <p class="text-sm text-zinc-400 text-adaptive-muted leading-relaxed">
+                        Permanently deletes your channel profile (<span id="delete-acct-handle" class="font-semibold text-zinc-200">@quiet.orbit</span>), subscriber & like counters, AI notes, and every video saved in this session's vault. This cannot be undone.
+                    </p>
+                    <button onclick="openDeleteAccountModal()" aria-label="Start Delete Account Flow" class="w-full min-h-[44px] py-3 rounded-xl bg-rose-600/20 border border-rose-500/40 text-rose-300 font-bold text-xs hover:bg-rose-600/30 active:scale-95 transition">
+                        Delete Account Permanently
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== BOTTOM NAVIGATION BAR (MATCHING IMAGE 1, >=44px HIT AREAS) ==================== -->
+        <nav aria-label="Primary Bottom Navigation" class="fixed sm:absolute bottom-0 inset-x-0 min-h-[68px] pb-safe pt-1.5 bg-black border-t border-zinc-900/90 z-30 flex items-center justify-around px-2">
+            <!-- 1. Home -->
+            <button onclick="handleTabPress('home')" id="nav-home" aria-label="Home Tab" class="min-w-[52px] min-h-[44px] flex flex-col items-center justify-center text-white transition">
+                <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1V9.5z"/>
+                </svg>
+                <span class="text-xs font-medium">Home</span>
+            </button>
+
+            <!-- 2. Now -->
+            <button onclick="handleTabPress('now')" id="nav-now" aria-label="Now Tab" class="min-w-[52px] min-h-[44px] flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-200 transition">
+                <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2Z"/>
+                </svg>
+                <span class="text-xs font-medium">Now</span>
+            </button>
+
+            <!-- 3. Center '+' Pill Button -->
+            <button onclick="openCameraStudio()" aria-label="Film or Upload Video" class="min-w-[54px] min-h-[44px] flex items-center justify-center active:scale-90 transition">
+                <div class="relative flex items-center justify-center w-12 h-8">
+                    <div class="absolute inset-0 -translate-x-1 rounded-[9px] bg-[#25F4EE]"></div>
+                    <div class="absolute inset-0 translate-x-1 rounded-[9px] bg-gradient-to-b from-[#c084fc] to-[#FE2C55]"></div>
+                    <div class="relative w-full h-full rounded-[9px] bg-white text-black flex items-center justify-center shadow">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </div>
+                </div>
+            </button>
+
+            <!-- 4. Inbox -->
+            <button onclick="handleTabPress('inbox')" id="nav-inbox" aria-label="Inbox Tab" class="relative min-w-[52px] min-h-[44px] flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-200 transition">
+                <div class="relative">
+                    <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/>
+                        <line x1="9" y1="10" x2="15" y2="10"/>
+                    </svg>
+                    <span id="inbox-unread-dot" class="hidden absolute -top-0.5 -right-1 w-2.5 h-2.5 rounded-full bg-purple-400 border-2 border-black"></span>
+                </div>
+                <span class="text-xs font-medium">Inbox</span>
+            </button>
+
+            <!-- 5. Me -->
+            <button onclick="handleTabPress('me')" id="nav-me" aria-label="Me Channel Tab" class="min-w-[52px] min-h-[44px] flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-200 transition">
+                <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span class="text-xs font-medium">Me</span>
+            </button>
+        </nav>
+
+        <!-- ==================== FULL-SCREEN CAMERA STUDIO (MATCHING IMAGE 2) ==================== -->
+        <div id="camera-studio" class="hidden absolute inset-0 z-50 bg-black flex flex-col justify-between overflow-hidden">
+            <!-- Top Recording Progress Bar -->
+            <div class="absolute top-2 inset-x-3 z-30 h-1 rounded-full bg-white/20 overflow-hidden">
+                <div id="rec-progress-bar" class="h-full w-0 bg-gradient-to-r from-purple-400 to-rose-500 transition-all duration-100"></div>
+            </div>
+
+            <!-- Live Camera Feed / Fallback Canvas Preview -->
+            <div class="absolute inset-0 bg-zinc-950 flex items-center justify-center">
+                <video id="camera-live-video" autoplay playsinline muted class="w-full h-full object-cover scale-x-[-1] filter-normal"></video>
+                <canvas id="camera-fallback-canvas" class="hidden w-full h-full object-cover"></canvas>
+                <canvas id="camera-effects-overlay" class="pointer-events-none absolute inset-0 w-full h-full"></canvas>
+                <div id="camera-flash-overlay" class="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-200"></div>
+            </div>
+
+            <!-- Countdown Overlay -->
+            <div id="camera-countdown" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
+                <span id="camera-countdown-num" class="text-7xl font-extrabold text-white drop-shadow-[0_0_25px_rgba(192,132,252,0.8)]">3</span>
+            </div>
+
+            <!-- Top Controls Row (Back/Close | ♫ Sunroof Pill | Spacer) -->
+            <div class="relative z-30 pt-safe px-4 flex items-center justify-between">
+                <button onclick="closeCameraStudio()" aria-label="Close Camera Studio and Go Back" class="w-11 h-11 rounded-full bg-black/45 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 transition">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+
+                <button onclick="cycleCameraTrack()" aria-label="Select Soundtrack" class="min-h-[44px] px-4 py-1.5 rounded-full bg-zinc-900/85 backdrop-blur-md border border-white/15 flex items-center gap-2 text-xs font-semibold text-white shadow-lg active:scale-95 transition">
+                    <svg class="w-4 h-4 text-purple-300" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                    <span id="camera-track-label">Sunroof</span>
+                </button>
+
+                <div class="w-11"></div>
+            </div>
+
+            <!-- Right Vertical Camera Toolbar (44x44px Hit Targets) -->
+            <div class="absolute right-2.5 top-20 z-30 flex flex-col items-center gap-2">
+                <button onclick="flipCameraFacing()" aria-label="Flip Camera" class="min-w-[48px] min-h-[48px] flex flex-col items-center justify-center text-white active:scale-90 transition">
+                    <div class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4"/>
+                            <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
+                        </svg>
+                    </div>
+                    <span class="text-xs font-medium drop-shadow">Flip</span>
+                </button>
+
+                <button onclick="cycleCameraSpeed()" aria-label="Change Recording Speed" class="min-w-[48px] min-h-[48px] flex flex-col items-center justify-center text-white active:scale-90 transition">
+                    <div class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                        <span id="cam-speed-badge" class="text-xs font-extrabold text-purple-200">1x</span>
+                    </div>
+                    <span class="text-xs font-medium drop-shadow">Speed</span>
+                </button>
+
+                <button onclick="cycleCameraFilter()" aria-label="Cycle Camera Filters" class="min-w-[48px] min-h-[48px] flex flex-col items-center justify-center text-white active:scale-90 transition">
+                    <div class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="8" r="4"/>
+                            <circle cx="8.5" cy="15" r="4"/>
+                            <circle cx="15.5" cy="15" r="4"/>
+                        </svg>
+                    </div>
+                    <span id="cam-filter-label" class="text-xs font-medium drop-shadow">Filters</span>
+                </button>
+
+                <button onclick="toggleCameraEnhance()" aria-label="Toggle Soft Glow Enhance" class="min-w-[48px] min-h-[48px] flex flex-col items-center justify-center text-white active:scale-90 transition">
+                    <div id="cam-enhance-circle" class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8L19 13M17.8 6.2L19 5M3 21l9-9M12.2 6.2L11 5"/>
+                        </svg>
+                    </div>
+                    <span class="text-xs font-medium drop-shadow">Enhance</span>
+                </button>
+
+                <button onclick="toggleCameraTimer()" aria-label="Toggle 3 Second Countdown Timer" class="min-w-[48px] min-h-[48px] flex flex-col items-center justify-center text-white active:scale-90 transition">
+                    <div id="cam-timer-circle" class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition">
+                        <span id="cam-timer-badge" class="text-xs font-bold">3s</span>
+                    </div>
+                    <span class="text-xs font-medium drop-shadow">Timer</span>
+                </button>
+
+                <button onclick="toggleCameraFlash()" aria-label="Toggle Soft Screen Flash" class="min-w-[48px] min-h-[48px] flex flex-col items-center justify-center text-white active:scale-90 transition">
+                    <div id="cam-flash-circle" class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                    </div>
+                    <span class="text-xs font-medium drop-shadow">Flash</span>
+                </button>
+            </div>
+
+            <!-- Bottom Camera Controls -->
+            <div class="relative z-30 pb-safe pt-3 px-5 bg-gradient-to-t from-black/90 via-black/45 to-transparent flex flex-col items-center">
+                <div id="rec-timer-pill" class="hidden mb-2 px-3 py-0.5 rounded-full bg-rose-500/90 text-xs font-mono font-bold text-white">
+                    00:00
+                </div>
+
+                <!-- Duration Pills -->
+                <div id="duration-selector-row" class="flex items-center gap-2 mb-4 text-xs font-semibold">
+                    <button onclick="selectCameraDuration(180)" id="dur-btn-180" aria-label="3 Minutes Duration" class="min-h-[44px] px-3.5 py-1 rounded-full text-zinc-300 transition">3m</button>
+                    <button onclick="selectCameraDuration(60)" id="dur-btn-60" aria-label="60 Seconds Duration" class="min-h-[44px] px-4 py-1 rounded-full bg-white/20 text-white font-bold backdrop-blur-sm transition">60s</button>
+                    <button onclick="selectCameraDuration(15)" id="dur-btn-15" aria-label="15 Seconds Duration" class="min-h-[44px] px-3.5 py-1 rounded-full text-zinc-300 transition">15s</button>
+                </div>
+
+                <!-- Shutter Row: Effects | Record Button | Upload -->
+                <div class="w-full max-w-xs flex items-center justify-between mb-4">
+                    <button onclick="toggleCameraEffects()" aria-label="Toggle Sparkle Effects" class="min-w-[52px] min-h-[52px] flex flex-col items-center gap-1 active:scale-90 transition">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 to-emerald-400 p-0.5 shadow-lg">
+                            <div class="w-full h-full rounded-[10px] bg-zinc-900/90 flex items-center justify-center text-purple-300">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <span class="text-xs font-medium text-white">Effects</span>
+                    </button>
+
+                    <button onclick="handleShutterPress()" id="camera-shutter-btn" aria-label="Start or Stop Video Recording" class="w-20 h-20 rounded-full border-[4px] border-rose-500/70 p-1.5 flex items-center justify-center active:scale-95 transition">
+                        <div id="camera-shutter-inner" class="w-full h-full rounded-full bg-[#fe2c55] transition-all duration-200 shadow-[0_0_20px_rgba(254,44,85,0.5)]"></div>
+                    </button>
+
+                    <label aria-label="Upload Video File" class="min-w-[52px] min-h-[52px] flex flex-col items-center gap-1 cursor-pointer active:scale-90 transition">
+                        <div class="w-10 h-10 rounded-xl bg-zinc-900/90 border border-white/25 flex items-center justify-center text-white shadow-lg">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="3"/>
+                                <path d="M12 16V8m0 0l-3 3m3-3l3 3"/>
+                            </svg>
+                        </div>
+                        <span class="text-xs font-medium text-white">Upload</span>
+                        <input type="file" id="studio-upload-input" accept="video/*" class="hidden" onchange="handleStudioFileUpload(this)">
+                    </label>
+                </div>
+
+                <!-- Bottom Mode Tabs -->
+                <div class="flex items-center gap-5 text-xs font-semibold">
+                    <button onclick="showToast('Solo mode active — Duets are disabled for privacy')" aria-label="Duet Info" class="min-h-[44px] px-2 text-zinc-400">Duet</button>
+                    <div class="flex flex-col items-center">
+                        <span class="text-white font-bold">Camera</span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-white mt-1"></span>
+                    </div>
+                    <button onclick="generateQuickAmbientClip()" aria-label="Generate Instant Ambient Clip" class="min-h-[44px] px-2 text-zinc-300 hover:text-purple-300 transition">Templates</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== POST REVIEW, CAPTION & DESCRIPTION SCREEN ==================== -->
+        <div id="post-composer-modal" class="hidden surface-page absolute inset-0 z-50 bg-[#09090d] flex flex-col">
+            <div class="pt-safe px-4 pb-3 border-b border-zinc-800/80 flex items-center justify-between">
+                <button onclick="discardDraftClip()" aria-label="Go Back and Re-film" class="min-h-[44px] min-w-[44px] px-2 flex items-center gap-1 text-xs font-bold text-purple-300 hover:text-white">
+                    <span>← Re-film</span>
+                </button>
+                <span class="text-sm font-bold text-adaptive-main">New Solo Post</span>
+                <div class="w-14"></div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+                <!-- Video Preview + Live On-Screen Caption Overlay -->
+                <div class="relative w-44 aspect-[9/16] mx-auto rounded-2xl overflow-hidden bg-black border border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.18)]">
+                    <video id="draft-preview-video" class="w-full h-full object-cover" loop autoplay muted playsinline></video>
+                    <div id="draft-caption-badge" class="hidden absolute inset-x-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm text-center text-xs font-bold text-white shadow">
+                    </div>
+                </div>
+
+                <!-- On-Video Caption Overlay Input -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label for="draft-video-caption" class="text-xs font-bold uppercase tracking-wider text-purple-300">On-Video Caption</label>
+                        <span class="text-xs text-zinc-400">Appears over video</span>
+                    </div>
+                    <input
+                        type="text"
+                        id="draft-video-caption"
+                        oninput="updateDraftCaptionPreview(this.value)"
+                        placeholder="Add text onto your video..."
+                        class="surface-input w-full min-h-[44px] rounded-xl bg-[#13131c] border border-purple-500/25 px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-purple-400"
+                    >
+                </div>
+
+                <!-- Video Description Input -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label for="draft-video-description" class="text-xs font-bold uppercase tracking-wider text-purple-300">Video Description</label>
+                        <span class="text-xs text-zinc-400">Shown below handle</span>
+                    </div>
+                    <textarea
+                        id="draft-video-description"
+                        rows="3"
+                        placeholder="Write a calm note, thought, or hashtags for your description... #solitude #cozy"
+                        class="surface-input w-full rounded-xl bg-[#13131c] border border-purple-500/25 px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-purple-400 resize-none"
+                    ></textarea>
+                </div>
+
+                <!-- Sound Track Label -->
+                <div>
+                    <label for="draft-video-sound" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">Soundtrack</label>
+                    <input
+                        type="text"
+                        id="draft-video-sound"
+                        class="surface-input w-full min-h-[44px] rounded-xl bg-[#13131c] border border-zinc-800 px-3.5 py-2 text-sm text-zinc-200 focus:outline-none focus:border-purple-400"
+                    >
+                </div>
+            </div>
+
+            <div class="p-4 pb-safe border-t border-zinc-800/80 bg-[#09090d] surface-page">
+                <button onclick="publishDraftVideo()" aria-label="Publish Video to Private Feed" class="w-full min-h-[48px] py-3.5 rounded-xl bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-400 hover:to-fuchsia-400 text-zinc-950 font-extrabold text-sm active:scale-95 transition shadow-[0_0_25px_rgba(168,85,247,0.35)]">
+                    Post to My Private Feed
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== DEDICATED ME VIDEO PLAYER MODAL (REOPEN ANY POSTED VIDEO) ==================== -->
+        <div id="me-video-player-modal" class="hidden absolute inset-0 z-50 bg-black flex flex-col justify-between">
+            <div class="pt-safe px-4 pb-3 flex items-center justify-between z-20 bg-gradient-to-b from-black/80 to-transparent">
+                <button onclick="closeMeVideoPlayer()" aria-label="Back to Me Channel" class="min-h-[44px] min-w-[44px] px-2 flex items-center gap-1.5 text-sm font-bold text-white active:scale-95 transition">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>Back</span>
+                </button>
+                <span class="text-xs font-semibold text-purple-200">Private Clip</span>
+                <button id="me-player-delete-btn" aria-label="Delete This Video" class="w-11 h-11 rounded-full bg-rose-600/25 border border-rose-500/40 flex items-center justify-center text-rose-300 active:scale-90 transition">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="absolute inset-0 flex items-center justify-center">
+                <video id="me-player-video" class="w-full h-full object-cover" loop playsinline controls></video>
+                <div id="me-player-caption" class="hidden pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl bg-black/65 backdrop-blur-sm text-white font-bold text-sm text-center"></div>
+            </div>
+
+            <div class="relative z-20 p-4 pb-safe bg-gradient-to-t from-black/90 via-black/50 to-transparent space-y-2">
+                <p id="me-player-desc" class="selectable-text text-sm text-zinc-100 leading-snug"></p>
+                <div class="flex items-center justify-between pt-1">
+                    <span id="me-player-stats" class="text-xs font-semibold text-purple-300"></span>
+                    <button id="me-player-open-feed-btn" aria-label="View in Main Feed" class="min-h-[44px] px-4 py-2 rounded-full bg-purple-500 text-zinc-950 font-bold text-xs active:scale-95 transition">
+                        Open in Feed
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== EDIT PROFILE MODAL (DISPLAY NAME, HANDLE & PICTURE) ==================== -->
+        <div id="edit-profile-modal" class="hidden absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-5">
+            <div class="surface-card w-full max-w-sm bg-[#13131c] border border-purple-500/25 rounded-3xl p-5 space-y-4 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <button onclick="closeEditProfileModal()" aria-label="Back to Profile" class="min-h-[44px] min-w-[44px] -ml-2 px-2 flex items-center text-xs font-bold text-purple-300">
+                        ← Back
+                    </button>
+                    <h3 class="text-base font-bold text-adaptive-main">Edit Profile</h3>
+                    <div class="w-11"></div>
+                </div>
+
+                <!-- Profile Picture Upload -->
+                <div class="flex flex-col items-center">
+                    <label aria-label="Choose Profile Picture" class="cursor-pointer group relative flex flex-col items-center">
+                        <div id="edit-avatar-preview" class="w-20 h-20 rounded-full bg-zinc-900 border-2 border-purple-400/50 overflow-hidden flex items-center justify-center">
+                        </div>
+                        <span class="text-xs font-semibold text-purple-300 mt-2 group-hover:underline">Change Profile Picture</span>
+                        <input type="file" id="avatar-file-input" accept="image/*" class="hidden" onchange="handleAvatarSelected(this)">
+                    </label>
+                </div>
+
+                <!-- Channel Display Name Input -->
+                <div>
+                    <label for="edit-name-input" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">Channel Name</label>
+                    <input type="text" id="edit-name-input" placeholder="Quiet Orbit" class="surface-input w-full min-h-[44px] rounded-xl bg-[#09090d] border border-purple-500/25 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-400">
+                </div>
+
+                <!-- Channel Handle Input -->
+                <div>
+                    <label for="edit-handle-input" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">Handle (@username)</label>
+                    <input type="text" id="edit-handle-input" placeholder="@quiet.orbit" class="surface-input w-full min-h-[44px] rounded-xl bg-[#09090d] border border-purple-500/25 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-400">
+                </div>
+
+                <!-- Bio Input -->
+                <div>
+                    <label for="edit-bio-input" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">Bio Note</label>
+                    <input type="text" id="edit-bio-input" placeholder="Just filming small moments for myself." class="surface-input w-full min-h-[44px] rounded-xl bg-[#09090d] border border-purple-500/25 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-400">
+                </div>
+
+                <button onclick="saveProfileChanges()" aria-label="Save Channel Name and Profile" class="w-full min-h-[48px] py-3 rounded-xl bg-purple-500 hover:bg-purple-400 text-zinc-950 font-bold text-sm active:scale-95 transition">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== COMMENTS DRAWER ==================== -->
+        <div id="comments-drawer" class="hidden absolute inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex flex-col justify-end">
+            <div class="flex-1" onclick="closeComments()"></div>
+            <div class="surface-card h-[68%] bg-[#13131c] border-t border-purple-500/25 rounded-t-3xl flex flex-col shadow-2xl">
+                <div class="px-4 py-2.5 border-b border-zinc-800/80 flex items-center justify-between">
+                    <div class="w-11"></div>
+                    <span id="drawer-comment-count" class="text-xs font-bold tracking-wide text-purple-300">0 notes</span>
+                    <button onclick="closeComments()" aria-label="Close Comments Drawer" class="w-11 h-11 rounded-full flex items-center justify-center text-zinc-400 hover:text-white">
+                        ✕
+                    </button>
+                </div>
+
+                <div id="drawer-comments-list" class="flex-1 overflow-y-auto px-4 py-3 space-y-4 no-scrollbar">
+                    <!-- Comments injected here -->
+                </div>
+
+                <form onsubmit="submitUserComment(event)" class="p-3 pb-safe bg-[#09090d] surface-page border-t border-zinc-800/80 flex items-center gap-2">
+                    <input type="text" id="user-comment-input" placeholder="Reply to AI or leave a quiet note..." class="surface-input flex-1 min-h-[44px] bg-[#13131c] border border-purple-500/20 rounded-full px-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-purple-400">
+                    <button type="submit" aria-label="Post Comment" class="w-11 h-11 rounded-full bg-purple-500 text-zinc-950 flex items-center justify-center hover:bg-purple-400 active:scale-90 transition">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="12" y1="19" x2="12" y2="5"></line>
+                            <polyline points="5 12 12 5 19 12"></polyline>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Delete Video Confirmation Modal -->
+        <div id="delete-modal" class="hidden absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+            <div class="surface-card w-full max-w-xs bg-[#13131c] border border-purple-500/25 rounded-3xl p-5 text-center shadow-2xl">
+                <h4 class="text-base font-bold text-adaptive-main mb-1.5">Delete this video?</h4>
+                <p class="text-sm text-zinc-400 text-adaptive-muted mb-5 leading-relaxed">It will be permanently removed from your private space.</p>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button onclick="closeDeleteModal()" aria-label="Keep Video" class="min-h-[44px] py-2.5 rounded-xl bg-zinc-800 text-xs font-bold text-zinc-200 hover:bg-zinc-700">Keep</button>
+                    <button onclick="confirmDeleteVideo()" aria-label="Confirm Delete Video" class="min-h-[44px] py-2.5 rounded-xl bg-rose-600 text-xs font-bold text-white hover:bg-rose-500">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Account Confirmation Modal -->
+        <div id="delete-account-modal" class="hidden absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-6">
+            <div class="surface-card w-full max-w-sm bg-[#13131c] border border-rose-500/35 rounded-3xl p-5 space-y-4 shadow-2xl">
+                <h4 class="text-base font-bold text-rose-400">Confirm Account Deletion</h4>
+                <p class="text-sm text-zinc-300 text-adaptive-muted leading-relaxed">
+                    Type <span class="font-mono font-bold text-rose-300">DELETE</span> below to permanently wipe this channel, all saved videos, and sign out into a fresh blank session.
+                </p>
+                <input type="text" id="delete-account-confirm-input" placeholder="Type DELETE" class="surface-input w-full min-h-[44px] rounded-xl bg-[#09090d] border border-rose-500/30 px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none">
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button onclick="closeDeleteAccountModal()" aria-label="Cancel Account Deletion" class="min-h-[44px] py-2.5 rounded-xl bg-zinc-800 text-xs font-bold text-zinc-200">Cancel</button>
+                    <button onclick="executeDeleteAccount()" aria-label="Permanently Delete Account" class="min-h-[44px] py-2.5 rounded-xl bg-rose-600 text-xs font-bold text-white hover:bg-rose-500">Wipe & Sign Out</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Soft Purple Toast Notification -->
+        <div id="toast-banner" class="pointer-events-none opacity-0 transition-opacity duration-300 absolute top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-[#161522]/95 border border-purple-400/35 text-xs font-medium text-purple-100 shadow-[0_0_20px_rgba(168,85,247,0.25)] flex items-center gap-2 whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+            <span id="toast-text">Notification</span>
+        </div>
+
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. THEME MANAGEMENT (Dark Default + Light Mode + Native Color-Scheme)
+           ========================================================================== */
+        const THEME_STORAGE_KEY = 'solitude_theme_pref';
+
+        function applyTheme(theme) {
+            const html = document.documentElement;
+            const btn = document.getElementById('theme-toggle-btn');
+            if (theme === 'light') {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                if (btn) btn.textContent = 'Light Mode';
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                if (btn) btn.textContent = 'Dark Mode';
+            }
+            localStorage.setItem(THEME_STORAGE_KEY, theme);
+        }
+
+        function initTheme() {
+            const saved = localStorage.getItem(THEME_STORAGE_KEY);
+            if (saved === 'light' || saved === 'dark') {
+                applyTheme(saved);
+            } else {
+                applyTheme('dark');
+            }
+        }
+
+        function toggleAppTheme() {
+            const isLight = document.documentElement.classList.contains('light');
+            applyTheme(isLight ? 'dark' : 'light');
+            showToast(isLight ? 'Switched to Dark Lavender theme' : 'Switched to Light Lavender theme');
+        }
+
+        /* ==========================================================================
+           2. INDEXEDDB STORAGE (Unlimited Video Vault per Isolated Session)
+           ========================================================================== */
+        const DB_NAME = 'SolusFeedVaultDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'videos';
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                        store.createIndex('sessionId', 'sessionId', { unique: false });
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function dbGetVideosBySession(sessionId) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const index = tx.objectStore(STORE_NAME).index('sessionId');
+                const req = index.getAll(sessionId);
+                req.onsuccess = () => {
+                    const items = req.result || [];
+                    items.sort((a, b) => b.createdAt - a.createdAt);
+                    resolve(items);
+                };
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function dbSaveVideo(record) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const req = tx.objectStore(STORE_NAME).put(record);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function dbDeleteVideo(id) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const req = tx.objectStore(STORE_NAME).delete(id);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function dbDeleteAllVideosForSession(sessionId) {
+            const vids = await dbGetVideosBySession(sessionId);
+            for (const v of vids) {
+                await dbDeleteVideo(v.id);
+            }
+        }
+
+        /* ==========================================================================
+           3. SESSION & CHANNEL PROFILE (993,944,204 Subscribers & 137B Base Likes)
+           ========================================================================== */
+        const SESSIONS_KEY = 'solitude_v3_sessions';
+        const ACTIVE_SESSION_KEY = 'solitude_v3_active_session';
+        const DEFAULT_SUBSCRIBERS = 993944204;
+        const DEFAULT_BASE_LIKES = 137000000000;
+
+        function generateSessionId() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = 'SOLO-';
+            for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            return code;
+        }
+
+        function getAllSessions() {
+            try {
+                return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]');
+            } catch {
+                return [];
+            }
+        }
+
+        function saveAllSessions(list) {
+            localStorage.setItem(SESSIONS_KEY, JSON.stringify(list));
+        }
+
+        let currentSessionId = localStorage.getItem(ACTIVE_SESSION_KEY);
+        if (!currentSessionId) {
+            currentSessionId = generateSessionId();
+            localStorage.setItem(ACTIVE_SESSION_KEY, currentSessionId);
+            saveAllSessions([currentSessionId]);
+        } else {
+            const existing = getAllSessions();
+            if (!existing.includes(currentSessionId)) {
+                existing.push(currentSessionId);
+                saveAllSessions(existing);
+            }
+        }
+
+        function getProfileKey(sessionId) {
+            return `solitude_v3_profile_${sessionId}`;
+        }
+
+        function getSessionProfile(sessionId) {
+            try {
+                const raw = localStorage.getItem(getProfileKey(sessionId));
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    return {
+                        displayName: parsed.displayName || 'Quiet Orbit',
+                        handle: parsed.handle || '@quiet.orbit',
+                        bio: parsed.bio || 'Just filming small moments for myself.',
+                        avatarDataUrl: parsed.avatarDataUrl || '',
+                        subscribers: typeof parsed.subscribers === 'number' ? parsed.subscribers : DEFAULT_SUBSCRIBERS,
+                        totalLikes: typeof parsed.totalLikes === 'number' ? parsed.totalLikes : DEFAULT_BASE_LIKES
+                    };
+                }
+            } catch {}
+            return {
+                displayName: 'Quiet Orbit',
+                handle: '@quiet.orbit',
+                bio: 'Just filming small moments for myself.',
+                avatarDataUrl: '',
+                subscribers: DEFAULT_SUBSCRIBERS,
+                totalLikes: DEFAULT_BASE_LIKES
+            };
+        }
+
+        function saveSessionProfile(sessionId, profile) {
+            localStorage.setItem(getProfileKey(sessionId), JSON.stringify(profile));
+        }
+
+        /* ==========================================================================
+           4. GLOBAL STATE & HIGH-VELOCITY ENGAGEMENT (18 - 37 LIKES / SECOND)
+           ========================================================================== */
+        let sessionVideos = [];
+        let userProfile = getSessionProfile(currentSessionId);
+        let blobUrlCache = new Map();
+        let activeTab = 'home';
+        let isGlobalMuted = true;
+        let activeVideoId = null;
+        let openCommentsVideoId = null;
+        let pendingDeleteVideoId = null;
+        let pendingAvatarDataUrl = '';
+        let fastLikeInterval = null;
+        let aiCommentTimer = null;
+        let inboxNotifications = [];
+        let tickCounter = 0;
+
+        function getBlobUrl(video) {
+            if (blobUrlCache.has(video.id)) return blobUrlCache.get(video.id);
+            const url = URL.createObjectURL(video.blob);
+            blobUrlCache.set(video.id, url);
+            return url;
+        }
+
+        function clearBlobUrls() {
+            for (const url of blobUrlCache.values()) URL.revokeObjectURL(url);
+            blobUrlCache.clear();
+        }
+
+        // Throttled 1-second tick delivering 18–37 likes per second
+        function startHighVelocityLikeEngine() {
+            if (fastLikeInterval) clearInterval(fastLikeInterval);
+            fastLikeInterval = setInterval(async () => {
+                const likesThisSecond = Math.floor(Math.random() * 20) + 18; // 18 to 37 inclusive
+                userProfile.totalLikes += likesThisSecond;
+                tickCounter++;
+
+                if (sessionVideos.length > 0) {
+                    const target = activeVideoId
+                        ? (sessionVideos.find((v) => v.id === activeVideoId) || sessionVideos[0])
+                        : sessionVideos[Math.floor(Math.random() * sessionVideos.length)];
+
+                    target.likes += likesThisSecond;
+
+                    const el = document.getElementById(`like-count-${target.id}`);
+                    if (el) el.textContent = formatCount(target.likes);
+
+                    if (activeTab === 'home' && target.id === activeVideoId) {
+                        spawnFloatingHeart(target.id);
+                    }
+
+                    // Persist to IndexedDB & localStorage every 3 seconds to keep disk I/O ultra-light
+                    if (tickCounter % 3 === 0) {
+                        await dbSaveVideo(target);
+                        saveSessionProfile(currentSessionId, userProfile);
+                    }
+                } else if (tickCounter % 3 === 0) {
+                    saveSessionProfile(currentSessionId, userProfile);
+                }
+
+                updateMeStats();
+            }, 1000);
+        }
+
+        const COZY_AI_BOTS = [
+            '@moss.bot',
+            '@late.tea',
+            '@cloud.archive',
+            '@gentle.pixel',
+            '@quiet.cactus',
+            '@soft.static'
+        ];
+
+        const CALM_FUNNY_COMMENTS = [
+            "this has the exact energy of finding a warm hoodie right out of the dryer",
+            "10/10 pacing, my nervous system just exhaled",
+            "not to be dramatic but this is the calmest corner of the internet",
+            "the lighting here deserves a tiny polite round of applause",
+            "low-key masterpiece. no notes, just vibes.",
+            "watched this twice instead of checking my emails. great decision.",
+            "this feels like rain tapping on a window while you have zero plans",
+            "certified cozy moment. putting this on my mental fridge.",
+            "the vibes are immaculate and nobody is even here to ruin them",
+            "honestly this healed 4% of my attention span",
+            "quietly iconic. 11/10 would chill here again.",
+            "this clip tastes like chamomile tea and turning your phone on Do Not Disturb"
+        ];
+
+        function pickAIComment(description, caption) {
+            const combined = `${description || ''} ${caption || ''}`.toLowerCase();
+            if (combined.includes('coffee') || combined.includes('tea') || combined.includes('mug')) {
+                return "warm beverage detected. automatic 10/10 cozy rating.";
+            }
+            if (combined.includes('night') || combined.includes('midnight') || combined.includes('sleep')) {
+                return "late-night footage hits so much calmer when nobody else is online.";
+            }
+            if (combined.includes('cat') || combined.includes('dog') || combined.includes('pet')) {
+                return "tell them a little internet robot said pspsps.";
+            }
+            return CALM_FUNNY_COMMENTS[Math.floor(Math.random() * CALM_FUNNY_COMMENTS.length)];
+        }
+
+        function scheduleNextAIComment() {
+            if (aiCommentTimer) clearTimeout(aiCommentTimer);
+            const delay = Math.floor(Math.random() * 12000) + 8000;
+            aiCommentTimer = setTimeout(async () => {
+                if (sessionVideos.length > 0) {
+                    await triggerAICommentDrop(false);
+                }
+                scheduleNextAIComment();
+            }, delay);
+        }
+
+        async function triggerManualAIComment() {
+            if (sessionVideos.length === 0) {
+                showToast('Film a video first so AI can leave a note!');
+                return;
+            }
+            await triggerAICommentDrop(true);
+        }
+
+        async function triggerAICommentDrop(notifyToast) {
+            if (!sessionVideos.length) return;
+            const target = sessionVideos[Math.floor(Math.random() * sessionVideos.length)];
+            const bot = COZY_AI_BOTS[Math.floor(Math.random() * COZY_AI_BOTS.length)];
+            const text = pickAIComment(target.description, target.caption);
+            const newCmt = {
+                id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+                author: bot,
+                isAI: true,
+                text,
+                likes: 1,
+                likedByCreator: false,
+                createdAt: Date.now()
+            };
+            target.comments.push(newCmt);
+            await dbSaveVideo(target);
+
+            const badge = document.getElementById(`comment-count-${target.id}`);
+            if (badge) badge.textContent = formatCount(target.comments.length);
+
+            inboxNotifications.unshift({
+                id: newCmt.id,
+                bot,
+                text,
+                videoDesc: target.description || target.caption || 'Your solo clip',
+                createdAt: Date.now()
+            });
+            document.getElementById('inbox-unread-dot').classList.remove('hidden');
+            renderInbox();
+
+            if (openCommentsVideoId === target.id) {
+                renderCommentsDrawer(target);
+            } else if (notifyToast) {
+                showToast(`${bot}: "${text.slice(0, 34)}..."`);
+            }
+        }
+
+        function spawnFloatingHeart(videoId) {
+            const slide = document.querySelector(`.video-slide[data-video-id="${videoId}"]`);
+            if (!slide) return;
+            const heart = document.createElement('div');
+            heart.className = 'floating-heart right-6 bottom-48 text-purple-400 drop-shadow-lg';
+            heart.innerHTML = `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+            slide.appendChild(heart);
+            setTimeout(() => heart.remove(), 1400);
+        }
+
+        /* ==========================================================================
+           5. TOUCH PULL-TO-REFRESH (~70px THRESHOLD, OVERSCROLL CONTAINED)
+           ========================================================================== */
+        function setupPullToRefresh() {
+            const shell = document.getElementById('app-shell');
+            const indicator = document.getElementById('ptr-indicator');
+            const spinner = document.getElementById('ptr-spinner');
+            const label = document.getElementById('ptr-label');
+
+            let startY = 0;
+            let pulling = false;
+            const THRESHOLD = 70;
+
+            function getActiveScrollContainer() {
+                if (activeTab === 'home') return document.getElementById('feed-container');
+                if (activeTab === 'now') return document.getElementById('view-now');
+                if (activeTab === 'inbox') return document.getElementById('view-inbox');
+                if (activeTab === 'me') return document.getElementById('view-me');
+                return null;
+            }
+
+            shell.addEventListener('touchstart', (e) => {
+                const scroller = getActiveScrollContainer();
+                if (!scroller || scroller.scrollTop > 2) {
+                    pulling = false;
+                    return;
+                }
+                startY = e.touches[0].clientY;
+                pulling = true;
+            }, { passive: true });
+
+            shell.addEventListener('touchmove', (e) => {
+                if (!pulling) return;
+                const scroller = getActiveScrollContainer();
+                if (!scroller || scroller.scrollTop > 2) {
+                    pulling = false;
+                    indicator.style.opacity = '0';
+                    return;
+                }
+                const deltaY = e.touches[0].clientY - startY;
+                if (deltaY > 12) {
+                    const progress = Math.min(1, deltaY / THRESHOLD);
+                    indicator.style.opacity = String(progress);
+                    spinner.style.transform = `rotate(${deltaY * 3}deg)`;
+                    label.textContent = deltaY >= THRESHOLD ? 'Release to refresh' : 'Pull to refresh';
+                }
+            }, { passive: true });
+
+            shell.addEventListener('touchend', async (e) => {
+                if (!pulling) return;
+                const endY = e.changedTouches[0].clientY;
+                const deltaY = endY - startY;
+                pulling = false;
+
+                if (deltaY >= THRESHOLD) {
+                    label.textContent = 'Refreshing...';
+                    spinner.classList.add('animate-spin');
+                    await loadCurrentSessionData();
+                    setTimeout(() => {
+                        spinner.classList.remove('animate-spin');
+                        indicator.style.opacity = '0';
+                        showToast('Private feed synced');
+                    }, 400);
+                } else {
+                    indicator.style.opacity = '0';
+                }
+            }, { passive: true });
+        }
+
+        /* ==========================================================================
+           6. IN-APP CAMERA STUDIO (UNLIMITED FILMING & UPLOAD)
+           ========================================================================== */
+        let cameraStream = null;
+        let useFallbackCanvasCam = false;
+        let fallbackAnimId = null;
+        let effectsAnimId = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+        let recordingSeconds = 0;
+        let recordingInterval = null;
+        let maxDurationSec = 60;
+        let cameraFacingMode = 'user';
+        let cameraSpeeds = [1, 1.5, 2, 0.5];
+        let cameraSpeedIdx = 0;
+        let cameraFilters = [
+            { id: 'normal', name: 'Filters', cls: 'filter-normal' },
+            { id: 'purple', name: 'Lavender', cls: 'filter-purple' },
+            { id: 'dusk', name: 'Warm Dusk', cls: 'filter-dusk' },
+            { id: 'midnight', name: 'Midnight', cls: 'filter-midnight' },
+            { id: 'cozy', name: 'Cozy', cls: 'filter-cozy' }
+        ];
+        let cameraFilterIdx = 0;
+        let cameraEnhanceOn = false;
+        let cameraTimerSec = 0;
+        let cameraFlashOn = false;
+        let cameraEffectsOn = false;
+        const CAMERA_TRACKS = ['Sunroof', 'Midnight Rain', 'Soft Lavender', 'Quiet Coffee', 'Cloud Drift'];
+        let cameraTrackIdx = 0;
+
+        let draftBlob = null;
+        let draftPreviewUrl = null;
+
+        async function openCameraStudio() {
+            document.querySelectorAll('video').forEach((v) => v.pause());
+            document.getElementById('camera-studio').classList.remove('hidden');
+            resetRecordingUI();
+            await startCameraHardware();
+        }
+
+        function closeCameraStudio() {
+            if (isRecording) stopCameraRecording();
+            stopCameraHardware();
+            document.getElementById('camera-studio').classList.add('hidden');
+            setupFeedObserver();
+        }
+
+        async function startCameraHardware() {
+            stopCameraHardware();
+            const liveVideo = document.getElementById('camera-live-video');
+            const fallbackCanvas = document.getElementById('camera-fallback-canvas');
+
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('No mediaDevices');
+                }
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: cameraFacingMode },
+                    audio: true
+                });
+                useFallbackCanvasCam = false;
+                fallbackCanvas.classList.add('hidden');
+                liveVideo.classList.remove('hidden');
+                liveVideo.srcObject = cameraStream;
+                liveVideo.style.transform = cameraFacingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+            } catch (err) {
+                useFallbackCanvasCam = true;
+                liveVideo.classList.add('hidden');
+                fallbackCanvas.classList.remove('hidden');
+                startFallbackAmbientCanvas(fallbackCanvas);
+            }
+        }
+
+        function stopCameraHardware() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach((t) => t.stop());
+                cameraStream = null;
+            }
+            if (fallbackAnimId) {
+                cancelAnimationFrame(fallbackAnimId);
+                fallbackAnimId = null;
+            }
+            if (effectsAnimId) {
+                cancelAnimationFrame(effectsAnimId);
+                effectsAnimId = null;
+            }
+        }
+
+        function startFallbackAmbientCanvas(canvas) {
+            canvas.width = 360;
+            canvas.height = 640;
+            const ctx = canvas.getContext('2d');
+            const orbs = Array.from({ length: 24 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 28 + 10,
+                vx: (Math.random() - 0.5) * 1.4,
+                vy: -Math.random() * 1.2 - 0.3
+            }));
+
+            let t = 0;
+            function loop() {
+                t += 0.015;
+                const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                grad.addColorStop(0, '#09090d');
+                grad.addColorStop(0.5, '#2e1065');
+                grad.addColorStop(1, '#1e1b4b');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                for (const o of orbs) {
+                    o.x = (o.x + o.vx + canvas.width) % canvas.width;
+                    o.y = (o.y + o.vy + canvas.height) % canvas.height;
+                    ctx.beginPath();
+                    ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(192, 132, 252, 0.16)';
+                    ctx.fill();
+                }
+
+                ctx.strokeStyle = 'rgba(216, 180, 254, 0.35)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2, canvas.height / 2, 58 + Math.sin(t * 2) * 12, 0, Math.PI * 2);
+                ctx.stroke();
+
+                fallbackAnimId = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        function cycleCameraTrack() {
+            cameraTrackIdx = (cameraTrackIdx + 1) % CAMERA_TRACKS.length;
+            document.getElementById('camera-track-label').textContent = CAMERA_TRACKS[cameraTrackIdx];
+        }
+
+        async function flipCameraFacing() {
+            cameraFacingMode = cameraFacingMode === 'user' ? 'environment' : 'user';
+            if (!useFallbackCanvasCam) await startCameraHardware();
+            showToast(cameraFacingMode === 'user' ? 'Front camera' : 'Back camera');
+        }
+
+        function cycleCameraSpeed() {
+            cameraSpeedIdx = (cameraSpeedIdx + 1) % cameraSpeeds.length;
+            const spd = cameraSpeeds[cameraSpeedIdx];
+            document.getElementById('cam-speed-badge').textContent = `${spd}x`;
+        }
+
+        function cycleCameraFilter() {
+            cameraFilterIdx = (cameraFilterIdx + 1) % cameraFilters.length;
+            const f = cameraFilters[cameraFilterIdx];
+            const vid = document.getElementById('camera-live-video');
+            cameraFilters.forEach((item) => vid.classList.remove(item.cls));
+            vid.classList.add(f.cls);
+            document.getElementById('cam-filter-label').textContent = f.name;
+        }
+
+        function toggleCameraEnhance() {
+            cameraEnhanceOn = !cameraEnhanceOn;
+            document.getElementById('cam-enhance-circle').classList.toggle('bg-purple-500/60', cameraEnhanceOn);
+            document.getElementById('camera-live-video').classList.toggle('enhance-glow', cameraEnhanceOn);
+        }
+
+        function toggleCameraTimer() {
+            cameraTimerSec = cameraTimerSec === 0 ? 3 : 0;
+            document.getElementById('cam-timer-circle').classList.toggle('bg-purple-500/60', cameraTimerSec > 0);
+            showToast(cameraTimerSec > 0 ? '3-second countdown ON' : 'Timer OFF');
+        }
+
+        function toggleCameraFlash() {
+            cameraFlashOn = !cameraFlashOn;
+            document.getElementById('cam-flash-circle').classList.toggle('bg-purple-500/60', cameraFlashOn);
+            document.getElementById('camera-flash-overlay').className = cameraFlashOn
+                ? 'pointer-events-none absolute inset-0 bg-purple-100/20 transition-colors duration-200'
+                : 'pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-200';
+        }
+
+        function toggleCameraEffects() {
+            cameraEffectsOn = !cameraEffectsOn;
+            const overlay = document.getElementById('camera-effects-overlay');
+            if (!cameraEffectsOn) {
+                if (effectsAnimId) cancelAnimationFrame(effectsAnimId);
+                overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
+                return;
+            }
+            overlay.width = 360;
+            overlay.height = 640;
+            const ctx = overlay.getContext('2d');
+            const stars = Array.from({ length: 22 }, () => ({
+                x: Math.random() * 360,
+                y: Math.random() * 640,
+                s: Math.random() * 3 + 1.5,
+                vy: -Math.random() * 1.1 - 0.3
+            }));
+            function drawStars() {
+                ctx.clearRect(0, 0, 360, 640);
+                ctx.fillStyle = 'rgba(233, 213, 255, 0.75)';
+                for (const st of stars) {
+                    st.y = (st.y + st.vy + 640) % 640;
+                    ctx.beginPath();
+                    ctx.arc(st.x, st.y, st.s, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                effectsAnimId = requestAnimationFrame(drawStars);
+            }
+            drawStars();
+        }
+
+        function selectCameraDuration(sec) {
+            maxDurationSec = sec;
+            [180, 60, 15].forEach((d) => {
+                const btn = document.getElementById(`dur-btn-${d}`);
+                btn.className = d === sec
+                    ? 'min-h-[44px] px-4 py-1 rounded-full bg-white/20 text-white font-bold backdrop-blur-sm transition'
+                    : 'min-h-[44px] px-3.5 py-1 rounded-full text-zinc-300 transition';
+            });
+        }
+
+        function handleShutterPress() {
+            if (isRecording) {
+                stopCameraRecording();
+                return;
+            }
+            if (cameraTimerSec > 0) {
+                runCountdownThenRecord(cameraTimerSec);
+            } else {
+                startCameraRecording();
+            }
+        }
+
+        function runCountdownThenRecord(seconds) {
+            const box = document.getElementById('camera-countdown');
+            const num = document.getElementById('camera-countdown-num');
+            let left = seconds;
+            num.textContent = left;
+            box.classList.remove('hidden');
+
+            const iv = setInterval(() => {
+                left--;
+                if (left <= 0) {
+                    clearInterval(iv);
+                    box.classList.add('hidden');
+                    startCameraRecording();
+                } else {
+                    num.textContent = left;
+                }
+            }, 1000);
+        }
+
+        function startCameraRecording() {
+            recordedChunks = [];
+            let streamToRecord = (!useFallbackCanvasCam && cameraStream)
+                ? cameraStream
+                : document.getElementById('camera-fallback-canvas').captureStream(30);
+
+            const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+                ? 'video/webm;codecs=vp9'
+                : (MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '');
+
+            mediaRecorder = mimeType
+                ? new MediaRecorder(streamToRecord, { mimeType })
+                : new MediaRecorder(streamToRecord);
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+            };
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: mimeType || 'video/webm' });
+                openPostComposerWithBlob(blob);
+            };
+
+            mediaRecorder.start(250);
+            isRecording = true;
+            recordingSeconds = 0;
+
+            document.getElementById('camera-shutter-inner').className =
+                'w-8 h-8 rounded-lg bg-[#fe2c55] transition-all duration-200 animate-pulse';
+            document.getElementById('rec-timer-pill').classList.remove('hidden');
+            document.getElementById('rec-timer-pill').textContent = '00:00';
+
+            recordingInterval = setInterval(() => {
+                recordingSeconds++;
+                const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+                const secs = String(recordingSeconds % 60).padStart(2, '0');
+                document.getElementById('rec-timer-pill').textContent = `${mins}:${secs}`;
+                const pct = Math.min(100, (recordingSeconds / maxDurationSec) * 100);
+                document.getElementById('rec-progress-bar').style.width = `${pct}%`;
+
+                if (recordingSeconds >= maxDurationSec) stopCameraRecording();
+            }, 1000);
+        }
+
+        function stopCameraRecording() {
+            isRecording = false;
+            if (recordingInterval) {
+                clearInterval(recordingInterval);
+                recordingInterval = null;
+            }
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            resetRecordingUI();
+        }
+
+        function resetRecordingUI() {
+            document.getElementById('camera-shutter-inner').className =
+                'w-full h-full rounded-full bg-[#fe2c55] transition-all duration-200 shadow-[0_0_20px_rgba(254,44,85,0.5)]';
+            document.getElementById('rec-timer-pill').classList.add('hidden');
+            document.getElementById('rec-progress-bar').style.width = '0%';
+        }
+
+        function handleStudioFileUpload(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            input.value = '';
+            openPostComposerWithBlob(file);
+        }
+
+        async function generateQuickAmbientClip() {
+            showToast('Generating calm template loop...');
+            const canvas = document.getElementById('camera-fallback-canvas');
+            canvas.classList.remove('hidden');
+            startFallbackAmbientCanvas(canvas);
+            const stream = canvas.captureStream(30);
+            const rec = new MediaRecorder(stream);
+            const chunks = [];
+            rec.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+            rec.onstop = () => {
+                openPostComposerWithBlob(new Blob(chunks, { type: 'video/webm' }));
+            };
+            rec.start();
+            setTimeout(() => rec.stop(), 1600);
+        }
+
+        /* ==========================================================================
+           7. POST COMPOSER (CAPTION OVERLAY + DESCRIPTION, UNLIMITED POSTS)
+           ========================================================================== */
+        function openPostComposerWithBlob(blob) {
+            stopCameraHardware();
+            document.getElementById('camera-studio').classList.add('hidden');
+
+            draftBlob = blob;
+            if (draftPreviewUrl) URL.revokeObjectURL(draftPreviewUrl);
+            draftPreviewUrl = URL.createObjectURL(blob);
+
+            const previewVid = document.getElementById('draft-preview-video');
+            previewVid.src = draftPreviewUrl;
+            previewVid.className = `w-full h-full object-cover ${cameraFilters[cameraFilterIdx].cls}`;
+
+            document.getElementById('draft-video-caption').value = '';
+            document.getElementById('draft-video-description').value = '';
+            document.getElementById('draft-video-sound').value =
+                `${CAMERA_TRACKS[cameraTrackIdx]} - ${userProfile.handle}`;
+            updateDraftCaptionPreview('');
+
+            document.getElementById('post-composer-modal').classList.remove('hidden');
+        }
+
+        function updateDraftCaptionPreview(text) {
+            const badge = document.getElementById('draft-caption-badge');
+            const trimmed = text.trim();
+            if (!trimmed) {
+                badge.classList.add('hidden');
+                badge.textContent = '';
+            } else {
+                badge.classList.remove('hidden');
+                badge.textContent = trimmed;
+            }
+        }
+
+        function discardDraftClip() {
+            document.getElementById('post-composer-modal').classList.add('hidden');
+            openCameraStudio();
+        }
+
+        async function publishDraftVideo() {
+            if (!draftBlob) return;
+
+            const caption = document.getElementById('draft-video-caption').value.trim();
+            const description = document.getElementById('draft-video-description').value.trim()
+                || 'A quiet moment kept just for me. #solitude';
+            const sound = document.getElementById('draft-video-sound').value.trim()
+                || `Sunroof - ${userProfile.handle}`;
+
+            const newVideo = {
+                id: 'vid_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                sessionId: currentSessionId,
+                blob: draftBlob,
+                caption,
+                description,
+                sound,
+                filterClass: cameraFilters[cameraFilterIdx].cls,
+                likes: Math.floor(Math.random() * 25) + 18,
+                likedByUser: false,
+                createdAt: Date.now(),
+                comments: [
+                    {
+                        id: 'cmt_init_' + Date.now(),
+                        author: '@moss.bot',
+                        isAI: true,
+                        text: 'saved safely in your private corner. low-key love this already.',
+                        likes: 1,
+                        likedByCreator: false,
+                        createdAt: Date.now()
+                    }
+                ]
+            };
+
+            await dbSaveVideo(newVideo);
+            document.getElementById('post-composer-modal').classList.add('hidden');
+            draftBlob = null;
+
+            handleTabPress('home', true);
+            await loadCurrentSessionData();
+            showToast('Posted! Post as many videos as you want');
+        }
+
+        /* ==========================================================================
+           8. FEED RENDERING & VIDEO PLAYBACK
+           ========================================================================== */
+        let feedObserver = null;
+
+        async function loadCurrentSessionData() {
+            clearBlobUrls();
+            userProfile = getSessionProfile(currentSessionId);
+            sessionVideos = await dbGetVideosBySession(currentSessionId);
+
+            document.getElementById('header-session-label').textContent = currentSessionId;
+            document.getElementById('empty-handle-label').textContent = userProfile.handle;
+            document.getElementById('me-name-display').textContent = userProfile.displayName;
+            document.getElementById('me-handle-display').textContent = userProfile.handle;
+            document.getElementById('me-bio-display').textContent = userProfile.bio;
+            document.getElementById('me-session-badge').textContent = currentSessionId;
+            document.getElementById('delete-acct-handle').textContent = userProfile.handle;
+
+            renderAvatarIntoElement(document.getElementById('me-avatar-container'), userProfile.avatarDataUrl, 'w-10 h-10');
+            renderSessionSwitcher();
+            renderFeed();
+            renderMeGrid();
+            renderInbox();
+        }
+
+        function renderAvatarIntoElement(el, avatarDataUrl, iconSizeClass = 'w-5 h-5') {
+            if (!el) return;
+            if (avatarDataUrl) {
+                el.innerHTML = `<img src="${avatarDataUrl}" alt="Channel Avatar" class="w-full h-full object-cover">`;
+            } else {
+                el.innerHTML = `
+                    <svg class="${iconSizeClass} text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                `;
+            }
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('feed-container');
+            const emptyState = document.getElementById('empty-state');
+            container.innerHTML = '';
+
+            if (sessionVideos.length === 0) {
+                emptyState.classList.remove('hidden');
+                activeVideoId = null;
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            sessionVideos.forEach((video) => {
+                const videoUrl = getBlobUrl(video);
+                const slide = document.createElement('div');
+                slide.className = 'video-slide bg-black flex items-center justify-center overflow-hidden';
+                slide.dataset.videoId = video.id;
+
+                const avatarHtml = userProfile.avatarDataUrl
+                    ? `<img src="${userProfile.avatarDataUrl}" alt="Avatar" class="w-full h-full object-cover">`
+                    : `<svg class="w-5 h-5 text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+
+                slide.innerHTML = `
+                    <video
+                        id="vid-${video.id}"
+                        src="${videoUrl}"
+                        class="w-full h-full object-cover cursor-pointer ${video.filterClass || 'filter-normal'}"
+                        loop
+                        playsinline
+                        ${isGlobalMuted ? 'muted' : ''}
+                        onclick="handleVideoTap('${video.id}')"
+                    ></video>
+
+                    ${video.caption ? `
+                        <div class="selectable-text absolute inset-x-8 top-1/2 -translate-y-1/2 z-20 flex justify-center">
+                            <span class="px-4 py-2 rounded-xl bg-black/65 backdrop-blur-sm text-white font-bold text-sm text-center shadow-lg border border-white/10">
+                                ${escapeHtml(video.caption)}
+                            </span>
+                        </div>
+                    ` : ''}
+
+                    <div id="pause-icon-${video.id}" class="hidden pointer-events-none absolute inset-0 flex items-center justify-center z-20">
+                        <div class="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-purple-200">
+                            <svg class="w-8 h-8 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <button
+                        onclick="unmuteFromPill(event, '${video.id}')"
+                        aria-label="Tap to Unmute Video"
+                        class="unmute-pill ${isGlobalMuted ? '' : 'hidden'} min-h-[44px] absolute top-16 left-4 z-20 px-3.5 py-2 rounded-full bg-[#13131c]/85 backdrop-blur-md border border-purple-400/25 text-xs font-semibold text-purple-200 flex items-center gap-1.5 active:scale-95 transition"
+                    >
+                        <span>🔇 Tap to unmute</span>
+                    </button>
+
+                    <div class="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black/90 via-black/45 to-transparent z-10"></div>
+
+                    <!-- Right Action Rail (>=44x44px Hit Areas) -->
+                    <div class="absolute right-2.5 bottom-5 z-20 flex flex-col items-center gap-3">
+                        <button onclick="handleTabPress('me')" aria-label="Open Channel Profile" class="relative w-12 h-12 flex items-center justify-center mb-1">
+                            <div class="w-11 h-11 rounded-full p-0.5 bg-gradient-to-tr from-purple-500 to-fuchsia-400 shadow-lg">
+                                <div class="w-full h-full rounded-full bg-[#13131c] overflow-hidden flex items-center justify-center">
+                                    ${avatarHtml}
+                                </div>
+                            </div>
+                        </button>
+
+                        <button onclick="toggleVideoLike('${video.id}')" aria-label="Like Video" class="min-w-[48px] min-h-[54px] flex flex-col items-center active:scale-90 transition">
+                            <div class="w-11 h-11 rounded-full bg-[#13131c]/65 backdrop-blur-md flex items-center justify-center">
+                                <svg id="like-icon-${video.id}" class="w-7 h-7 ${video.likedByUser ? 'text-purple-400' : 'text-white'} transition-colors drop-shadow" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
+                            </div>
+                            <span id="like-count-${video.id}" class="text-xs font-bold mt-1 drop-shadow">${formatCount(video.likes)}</span>
+                        </button>
+
+                        <button onclick="openComments('${video.id}')" aria-label="Open Comments" class="min-w-[48px] min-h-[54px] flex flex-col items-center active:scale-90 transition">
+                            <div class="w-11 h-11 rounded-full bg-[#13131c]/65 backdrop-blur-md flex items-center justify-center">
+                                <svg class="w-7 h-7 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                                </svg>
+                            </div>
+                            <span id="comment-count-${video.id}" class="text-xs font-bold mt-1 drop-shadow">${formatCount(video.comments.length)}</span>
+                        </button>
+
+                        <button onclick="promptDeleteVideo('${video.id}')" aria-label="Delete Video" class="w-11 h-11 rounded-full bg-[#13131c]/65 backdrop-blur-md flex items-center justify-center text-zinc-200 hover:text-rose-400 active:scale-90 transition">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+
+                        <div id="vinyl-${video.id}" class="w-11 h-11 rounded-full bg-gradient-to-tr from-zinc-900 via-zinc-700 to-zinc-900 border-[3px] border-zinc-800 flex items-center justify-center shadow-lg animate-vinyl mt-1">
+                            <div class="w-4 h-4 rounded-full bg-gradient-to-tr from-purple-400 to-fuchsia-500"></div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom-Left Name, Handle, Selectable Description & Audio Marquee -->
+                    <div class="absolute left-4 right-20 bottom-5 z-20">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-sm font-extrabold text-white drop-shadow">${escapeHtml(userProfile.displayName)}</span>
+                            <span class="text-xs font-semibold text-purple-200 drop-shadow">${escapeHtml(userProfile.handle)}</span>
+                        </div>
+                        <p class="selectable-text text-sm text-zinc-100 leading-snug line-clamp-3 mb-2.5 drop-shadow">${escapeHtml(video.description || '')}</p>
+                        <div class="flex items-center gap-2 overflow-hidden w-52 pointer-events-none">
+                            <svg class="w-4 h-4 text-purple-300 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                            </svg>
+                            <div class="overflow-hidden flex-1">
+                                <div class="marquee-track text-xs font-medium text-zinc-200">
+                                    <span class="mr-8">${escapeHtml(video.sound)}</span>
+                                    <span class="mr-8">${escapeHtml(video.sound)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(slide);
+            });
+
+            setupFeedObserver();
+        }
+
+        function setupFeedObserver() {
+            if (feedObserver) feedObserver.disconnect();
+            const slides = document.querySelectorAll('.video-slide');
+
+            feedObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    const vidId = entry.target.dataset.videoId;
+                    const videoEl = document.getElementById(`vid-${vidId}`);
+                    const pauseIcon = document.getElementById(`pause-icon-${vidId}`);
+                    const vinyl = document.getElementById(`vinyl-${vidId}`);
+                    if (!videoEl) return;
+
+                    if (entry.isIntersecting) {
+                        activeVideoId = vidId;
+                        videoEl.muted = isGlobalMuted;
+                        videoEl.play().then(() => {
+                            if (pauseIcon) pauseIcon.classList.add('hidden');
+                            if (vinyl) vinyl.classList.remove('paused-vinyl');
+                        }).catch(() => {
+                            videoEl.muted = true;
+                            videoEl.play().catch(() => {});
+                        });
+                    } else {
+                        videoEl.pause();
+                        videoEl.currentTime = 0;
+                        if (vinyl) vinyl.classList.add('paused-vinyl');
+                    }
+                });
+            }, { threshold: 0.65 });
+
+            slides.forEach((s) => feedObserver.observe(s));
+        }
+
+        function handleVideoTap(videoId) {
+            const videoEl = document.getElementById(`vid-${videoId}`);
+            const pauseIcon = document.getElementById(`pause-icon-${videoId}`);
+            const vinyl = document.getElementById(`vinyl-${videoId}`);
+            if (!videoEl) return;
+
+            if (isGlobalMuted) {
+                setGlobalMuteState(false);
+                if (videoEl.paused) {
+                    videoEl.play();
+                    pauseIcon.classList.add('hidden');
+                    vinyl.classList.remove('paused-vinyl');
+                }
+                return;
+            }
+
+            if (videoEl.paused) {
+                videoEl.play();
+                pauseIcon.classList.add('hidden');
+                vinyl.classList.remove('paused-vinyl');
+            } else {
+                videoEl.pause();
+                pauseIcon.classList.remove('hidden');
+                vinyl.classList.add('paused-vinyl');
+            }
+        }
+
+        function unmuteFromPill(event, videoId) {
+            event.stopPropagation();
+            setGlobalMuteState(false);
+            const videoEl = document.getElementById(`vid-${videoId}`);
+            if (videoEl && videoEl.paused) videoEl.play();
+        }
+
+        function toggleGlobalMute() {
+            setGlobalMuteState(!isGlobalMuted);
+        }
+
+        function setGlobalMuteState(muted) {
+            isGlobalMuted = muted;
+            document.querySelectorAll('#feed-container video').forEach((v) => {
+                v.muted = isGlobalMuted;
+            });
+            document.querySelectorAll('.unmute-pill').forEach((pill) => {
+                pill.classList.toggle('hidden', !isGlobalMuted);
+            });
+            updateMuteHeaderIcon();
+        }
+
+        function updateMuteHeaderIcon() {
+            const btn = document.getElementById('global-mute-btn');
+            if (isGlobalMuted) {
+                btn.innerHTML = `<svg class="w-5 h-5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+            } else {
+                btn.innerHTML = `<svg class="w-5 h-5 text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
+            }
+        }
+
+        /* ==========================================================================
+           9. LIKES, COMMENTS DRAWER & INBOX
+           ========================================================================== */
+        async function toggleVideoLike(videoId) {
+            const video = sessionVideos.find((v) => v.id === videoId);
+            if (!video) return;
+            video.likedByUser = !video.likedByUser;
+            const delta = video.likedByUser ? 1 : -1;
+            video.likes = Math.max(0, video.likes + delta);
+            userProfile.totalLikes = Math.max(0, userProfile.totalLikes + delta);
+            await dbSaveVideo(video);
+            saveSessionProfile(currentSessionId, userProfile);
+
+            const icon = document.getElementById(`like-icon-${videoId}`);
+            const count = document.getElementById(`like-count-${videoId}`);
+            if (icon) {
+                icon.classList.toggle('text-purple-400', video.likedByUser);
+                icon.classList.toggle('text-white', !video.likedByUser);
+            }
+            if (count) count.textContent = formatCount(video.likes);
+            if (video.likedByUser) spawnFloatingHeart(videoId);
+            updateMeStats();
+        }
+
+        function openComments(videoId) {
+            const video = sessionVideos.find((v) => v.id === videoId);
+            if (!video) return;
+            openCommentsVideoId = videoId;
+            renderCommentsDrawer(video);
+            document.getElementById('comments-drawer').classList.remove('hidden');
+        }
+
+        function closeComments() {
+            openCommentsVideoId = null;
+            document.getElementById('comments-drawer').classList.add('hidden');
+        }
+
+        function renderCommentsDrawer(video) {
+            document.getElementById('drawer-comment-count').textContent =
+                `${video.comments.length} ${video.comments.length === 1 ? 'note' : 'notes'}`;
+
+            const listEl = document.getElementById('drawer-comments-list');
+            listEl.innerHTML = '';
+
+            if (video.comments.length === 0) {
+                listEl.innerHTML = `<div class="py-12 text-center text-sm text-zinc-400">Quiet here for now. AI bots will drop by soon.</div>`;
+                return;
+            }
+
+            video.comments.forEach((cmt) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-start gap-3';
+                row.innerHTML = `
+                    <div class="w-9 h-9 rounded-full ${cmt.isAI ? 'bg-purple-500/20 border-purple-400/35 text-purple-200' : 'bg-fuchsia-500/20 border-fuchsia-400/35 text-fuchsia-200'} border flex items-center justify-center text-xs font-extrabold flex-shrink-0">
+                        ${cmt.isAI ? 'AI' : 'ME'}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-zinc-300 text-adaptive-main">${escapeHtml(cmt.isAI ? cmt.author : userProfile.handle)}</span>
+                            <span class="text-xs text-zinc-400">${timeAgo(cmt.createdAt)}</span>
+                        </div>
+                        <p class="selectable-text text-sm text-zinc-100 text-adaptive-main mt-1 leading-relaxed break-words">${escapeHtml(cmt.text)}</p>
+                        ${cmt.likedByCreator ? `
+                            <div class="inline-flex items-center gap-1 mt-1.5 px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-400/30 text-xs font-semibold text-purple-200">
+                                <span>♥ Liked by you</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="toggleCommentHeart('${video.id}', '${cmt.id}')" aria-label="Like Comment" class="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center text-zinc-400 hover:text-purple-300 active:scale-90 transition">
+                            <svg class="w-4 h-4 ${cmt.likedByCreator ? 'text-purple-400' : 'text-zinc-500'}" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                            </svg>
+                            <span class="text-xs mt-0.5">${cmt.likes}</span>
+                        </button>
+                        <button onclick="removeComment('${video.id}', '${cmt.id}')" aria-label="Delete Comment" class="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-400 hover:text-rose-400 active:scale-90 transition">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+
+        async function toggleCommentHeart(videoId, commentId) {
+            const video = sessionVideos.find((v) => v.id === videoId);
+            if (!video) return;
+            const cmt = video.comments.find((c) => c.id === commentId);
+            if (!cmt) return;
+
+            cmt.likedByCreator = !cmt.likedByCreator;
+            cmt.likes = Math.max(0, cmt.likes + (cmt.likedByCreator ? 1 : -1));
+            await dbSaveVideo(video);
+            renderCommentsDrawer(video);
+        }
+
+        async function removeComment(videoId, commentId) {
+            const video = sessionVideos.find((v) => v.id === videoId);
+            if (!video) return;
+            video.comments = video.comments.filter((c) => c.id !== commentId);
+            await dbSaveVideo(video);
+
+            const badge = document.getElementById(`comment-count-${videoId}`);
+            if (badge) badge.textContent = formatCount(video.comments.length);
+            renderCommentsDrawer(video);
+            showToast('Comment removed');
+        }
+
+        async function submitUserComment(event) {
+            event.preventDefault();
+            if (!openCommentsVideoId) return;
+            const input = document.getElementById('user-comment-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const video = sessionVideos.find((v) => v.id === openCommentsVideoId);
+            if (!video) return;
+
+            video.comments.push({
+                id: 'cmt_' + Date.now(),
+                author: userProfile.handle,
+                isAI: false,
+                text,
+                likes: 0,
+                likedByCreator: false,
+                createdAt: Date.now()
+            });
+            input.value = '';
+            await dbSaveVideo(video);
+
+            const badge = document.getElementById(`comment-count-${video.id}`);
+            if (badge) badge.textContent = formatCount(video.comments.length);
+            renderCommentsDrawer(video);
+
+            const targetId = video.id;
+            setTimeout(async () => {
+                const targetVideo = sessionVideos.find((v) => v.id === targetId);
+                if (!targetVideo) return;
+                const bot = COZY_AI_BOTS[Math.floor(Math.random() * COZY_AI_BOTS.length)];
+                const replies = [
+                    "totally agree. keeping this vibe archived.",
+                    "honestly so true. glad you shared that here.",
+                    "sending a quiet virtual nod your way.",
+                    "100% valid. zero arguments from the AI corner."
+                ];
+                targetVideo.comments.push({
+                    id: 'cmt_' + Date.now() + '_ai',
+                    author: bot,
+                    isAI: true,
+                    text: replies[Math.floor(Math.random() * replies.length)],
+                    likes: 1,
+                    likedByCreator: false,
+                    createdAt: Date.now()
+                });
+                await dbSaveVideo(targetVideo);
+                const cBadge = document.getElementById(`comment-count-${targetId}`);
+                if (cBadge) cBadge.textContent = formatCount(targetVideo.comments.length);
+                if (openCommentsVideoId === targetId) renderCommentsDrawer(targetVideo);
+            }, 1800);
+        }
+
+        function renderInbox() {
+            const list = document.getElementById('inbox-list');
+            if (!list) return;
+
+            const items = inboxNotifications.length > 0
+                ? inboxNotifications
+                : sessionVideos.flatMap((v) =>
+                    v.comments.filter((c) => c.isAI).map((c) => ({
+                        id: c.id,
+                        bot: c.author,
+                        text: c.text,
+                        videoDesc: v.description || v.caption || 'Your solo clip',
+                        createdAt: c.createdAt
+                    }))
+                ).sort((a, b) => b.createdAt - a.createdAt);
+
+            if (items.length === 0) {
+                list.innerHTML = `
+                    <div class="surface-card p-8 rounded-2xl bg-[#13131c] border border-zinc-800/80 text-center text-sm text-zinc-400">
+                        No AI notes yet. Once you film a video, friendly AI bots will leave calm comments here.
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = items.map((item) => `
+                <div class="surface-card p-3.5 rounded-2xl bg-[#13131c] border border-purple-500/15 flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-full bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-xs font-extrabold text-purple-200 flex-shrink-0">
+                        AI
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-purple-300">${escapeHtml(item.bot)}</span>
+                            <span class="text-xs text-zinc-400">${timeAgo(item.createdAt)}</span>
+                        </div>
+                        <p class="selectable-text text-sm text-zinc-100 text-adaptive-main mt-1 leading-relaxed">"${escapeHtml(item.text)}"</p>
+                        <p class="text-xs text-zinc-400 mt-1 truncate">On: ${escapeHtml(item.videoDesc)}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /* ==========================================================================
+           10. PROFILE EDITING (DISPLAY NAME + HANDLE + AVATAR), ME VIDEO PLAYER & ACCOUNT
+           ========================================================================== */
+        function openEditProfileModal() {
+            pendingAvatarDataUrl = userProfile.avatarDataUrl || '';
+            document.getElementById('edit-name-input').value = userProfile.displayName;
+            document.getElementById('edit-handle-input').value = userProfile.handle;
+            document.getElementById('edit-bio-input').value = userProfile.bio;
+            renderAvatarIntoElement(document.getElementById('edit-avatar-preview'), pendingAvatarDataUrl, 'w-8 h-8');
+            document.getElementById('edit-profile-modal').classList.remove('hidden');
+        }
+
+        function closeEditProfileModal() {
+            document.getElementById('edit-profile-modal').classList.add('hidden');
+        }
+
+        function handleAvatarSelected(input) {
+            if (!input.files || !input.files[0]) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                pendingAvatarDataUrl = e.target.result;
+                renderAvatarIntoElement(document.getElementById('edit-avatar-preview'), pendingAvatarDataUrl, 'w-8 h-8');
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        async function saveProfileChanges() {
+            const rawName = document.getElementById('edit-name-input').value.trim();
+            const displayName = rawName || 'Quiet Orbit';
+
+            let rawHandle = document.getElementById('edit-handle-input').value.trim();
+            if (!rawHandle) rawHandle = '@quiet.orbit';
+            if (!rawHandle.startsWith('@')) rawHandle = '@' + rawHandle;
+
+            const bio = document.getElementById('edit-bio-input').value.trim() || 'Just filming small moments for myself.';
+
+            userProfile = {
+                ...userProfile,
+                displayName,
+                handle: rawHandle,
+                bio,
+                avatarDataUrl: pendingAvatarDataUrl
+            };
+            saveSessionProfile(currentSessionId, userProfile);
+            closeEditProfileModal();
+            await loadCurrentSessionData();
+            showToast(`Saved name "${displayName}" (${rawHandle})`);
+        }
+
+        // Dedicated Me Video Player (Reopen & Watch Any Posted Clip from Me Tab)
+        function openMeVideoPlayer(videoId) {
+            const video = sessionVideos.find((v) => v.id === videoId);
+            if (!video) return;
+
+            const modal = document.getElementById('me-video-player-modal');
+            const player = document.getElementById('me-player-video');
+            const captionEl = document.getElementById('me-player-caption');
+            const descEl = document.getElementById('me-player-desc');
+            const statsEl = document.getElementById('me-player-stats');
+            const deleteBtn = document.getElementById('me-player-delete-btn');
+            const openFeedBtn = document.getElementById('me-player-open-feed-btn');
+
+            player.src = getBlobUrl(video);
+            player.className = `w-full h-full object-cover ${video.filterClass || 'filter-normal'}`;
+
+            if (video.caption) {
+                captionEl.textContent = video.caption;
+                captionEl.classList.remove('hidden');
+            } else {
+                captionEl.classList.add('hidden');
+            }
+
+            descEl.textContent = video.description || '';
+            statsEl.textContent = `♥ ${formatCount(video.likes)} likes • ${video.comments.length} AI notes`;
+
+            deleteBtn.onclick = () => {
+                closeMeVideoPlayer();
+                promptDeleteVideo(video.id);
+            };
+
+            openFeedBtn.onclick = () => {
+                const idx = sessionVideos.findIndex((v) => v.id === video.id);
+                closeMeVideoPlayer();
+                handleTabPress('home', true);
+                const slides = document.querySelectorAll('.video-slide');
+                if (slides[idx]) slides[idx].scrollIntoView({ behavior: 'auto' });
+            };
+
+            modal.classList.remove('hidden');
+            player.play().catch(() => {});
+        }
+
+        function closeMeVideoPlayer() {
+            const modal = document.getElementById('me-video-player-modal');
+            const player = document.getElementById('me-player-video');
+            player.pause();
+            player.removeAttribute('src');
+            modal.classList.add('hidden');
+        }
+
+        // Account & Privacy Subpage + Delete Account Flow
+        function openAccountSubpage() {
+            document.getElementById('me-root-stack').classList.add('hidden');
+            document.getElementById('me-account-subpage').classList.remove('hidden');
+        }
+
+        function closeAccountSubpage() {
+            document.getElementById('me-account-subpage').classList.add('hidden');
+            document.getElementById('me-root-stack').classList.remove('hidden');
+        }
+
+        function openDeleteAccountModal() {
+            document.getElementById('delete-account-confirm-input').value = '';
+            document.getElementById('delete-account-modal').classList.remove('hidden');
+        }
+
+        function closeDeleteAccountModal() {
+            document.getElementById('delete-account-modal').classList.add('hidden');
+        }
+
+        async function executeDeleteAccount() {
+            const typed = document.getElementById('delete-account-confirm-input').value.trim();
+            if (typed !== 'DELETE') {
+                showToast('Please type DELETE in all caps to confirm');
+                return;
+            }
+
+            await dbDeleteAllVideosForSession(currentSessionId);
+            localStorage.removeItem(getProfileKey(currentSessionId));
+
+            const remaining = getAllSessions().filter((s) => s !== currentSessionId);
+            const freshId = generateSessionId();
+            remaining.push(freshId);
+            saveAllSessions(remaining);
+
+            currentSessionId = freshId;
+            localStorage.setItem(ACTIVE_SESSION_KEY, currentSessionId);
+            inboxNotifications = [];
+
+            closeDeleteAccountModal();
+            closeAccountSubpage();
+            await loadCurrentSessionData();
+            handleTabPress('home', true);
+            showToast('Account deleted & signed out into fresh space');
+        }
+
+        const DAILY_PROMPTS = [
+            "Film 5 seconds of whatever is nearest to you right now—a mug, a window, or just your ceiling.",
+            "Record a quiet 10-second update on how your brain is feeling today.",
+            "Show the coziest corner of your room with your favorite filter.",
+            "Film your current drink or snack without saying a single word.",
+            "Capture a tiny detail you usually walk right past."
+        ];
+        let promptIdx = 0;
+
+        function cycleDailyPrompt() {
+            promptIdx = (promptIdx + 1) % DAILY_PROMPTS.length;
+            document.getElementById('daily-prompt-text').textContent = `"${DAILY_PROMPTS[promptIdx]}"`;
+        }
+
+        let audioCtx = null;
+        let droneOsc1 = null;
+        let droneOsc2 = null;
+        let droneGain = null;
+        let dronePlaying = false;
+
+        function toggleAmbientDrone() {
+            const btn = document.getElementById('ambient-drone-btn');
+            if (dronePlaying) {
+                if (droneOsc1) droneOsc1.stop();
+                if (droneOsc2) droneOsc2.stop();
+                dronePlaying = false;
+                btn.textContent = 'Play Hum';
+                return;
+            }
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!audioCtx) audioCtx = new AudioContext();
+            droneGain = audioCtx.createGain();
+            droneGain.gain.value = 0.04;
+            droneGain.connect(audioCtx.destination);
+
+            droneOsc1 = audioCtx.createOscillator();
+            droneOsc1.type = 'sine';
+            droneOsc1.frequency.value = 174.61;
+            droneOsc1.connect(droneGain);
+
+            droneOsc2 = audioCtx.createOscillator();
+            droneOsc2.type = 'triangle';
+            droneOsc2.frequency.value = 261.63;
+            droneOsc2.connect(droneGain);
+
+            droneOsc1.start();
+            droneOsc2.start();
+            dronePlaying = true;
+            btn.textContent = 'Stop Hum';
+            showToast('Calm ambient hum playing');
+        }
+
+        function promptDeleteVideo(videoId) {
+            pendingDeleteVideoId = videoId;
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            pendingDeleteVideoId = null;
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
+
+        async function confirmDeleteVideo() {
+            if (!pendingDeleteVideoId) return;
+            await dbDeleteVideo(pendingDeleteVideoId);
+            closeDeleteModal();
+            await loadCurrentSessionData();
+            showToast('Video deleted');
+        }
+
+        /* ==========================================================================
+           11. PER-TAB STACK & RE-TAP RESET NAVIGATION
+           ========================================================================== */
+        function handleTabPress(tab, forceSkipResetToast = false) {
+            const isRetap = activeTab === tab;
+            activeTab = tab;
+
+            // Reset tab stack / modals when active tab is re-tapped
+            if (isRetap) {
+                closeComments();
+                closeEditProfileModal();
+                closeMeVideoPlayer();
+                if (tab === 'home') {
+                    const feed = document.getElementById('feed-container');
+                    if (feed) feed.scrollTo({ top: 0, behavior: 'smooth' });
+                } else if (tab === 'me') {
+                    closeAccountSubpage();
+                    document.getElementById('view-me').scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    document.getElementById(`view-${tab}`).scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                return;
+            }
+
+            const views = ['home', 'now', 'inbox', 'me'];
+            views.forEach((v) => {
+                const viewEl = document.getElementById(`view-${v}`);
+                const isTarget = v === tab;
+                viewEl.classList.toggle('hidden', !isTarget);
+                if (isTarget) {
+                    viewEl.classList.remove('tab-view-enter');
+                    void viewEl.offsetWidth;
+                    viewEl.classList.add('tab-view-enter');
+                }
+                const navBtn = document.getElementById(`nav-${v}`);
+                if (navBtn) {
+                    navBtn.classList.toggle('text-white', isTarget);
+                    navBtn.classList.toggle('text-zinc-400', !isTarget);
+                }
+            });
+
+            document.getElementById('top-header').classList.toggle('hidden', tab !== 'home');
+
+            if (tab === 'home') {
+                setupFeedObserver();
+            } else {
+                document.querySelectorAll('#feed-container video').forEach((v) => v.pause());
+                if (tab === 'inbox') {
+                    document.getElementById('inbox-unread-dot').classList.add('hidden');
+                    renderInbox();
+                }
+                if (tab === 'me') {
+                    closeAccountSubpage();
+                    renderMeGrid();
+                }
+            }
+        }
+
+        function updateMeStats() {
+            const subsEl = document.getElementById('me-stat-subs');
+            const likesEl = document.getElementById('me-stat-likes');
+            const postsEl = document.getElementById('me-stat-posts');
+            if (subsEl) subsEl.textContent = userProfile.subscribers.toLocaleString();
+            if (likesEl) likesEl.textContent = userProfile.totalLikes.toLocaleString();
+            if (postsEl) postsEl.textContent = formatCount(sessionVideos.length);
+        }
+
+        function renderMeGrid() {
+            updateMeStats();
+            const grid = document.getElementById('me-grid');
+            grid.innerHTML = '';
+
+            if (sessionVideos.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-3 py-10 px-4 text-center text-sm text-zinc-400 border border-dashed border-purple-500/25 rounded-2xl">
+                        No clips filmed yet for ${escapeHtml(userProfile.displayName)}. Tap + below to film!
+                    </div>
+                `;
+                return;
+            }
+
+            sessionVideos.forEach((video) => {
+                const url = getBlobUrl(video);
+                const cell = document.createElement('div');
+                cell.className = 'aspect-[9/16] bg-[#13131c] rounded-xl overflow-hidden relative border border-purple-500/20 group';
+
+                cell.innerHTML = `
+                    <button onclick="openMeVideoPlayer('${video.id}')" aria-label="Play Video ${escapeHtml(video.caption || video.description || 'Clip')}" class="w-full h-full block relative text-left">
+                        <video src="${url}" muted playsinline preload="metadata" class="w-full h-full object-cover ${video.filterClass || ''}"></video>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                        <div class="absolute bottom-1.5 left-1.5 flex items-center gap-1 text-xs font-bold text-purple-200">
+                            <span>♥</span>
+                            <span>${formatCount(video.likes)}</span>
+                        </div>
+                    </button>
+                    <button onclick="event.stopPropagation(); promptDeleteVideo('${video.id}')" aria-label="Delete Clip" class="absolute top-1 right-1 w-8 h-8 rounded-full bg-black/65 backdrop-blur-sm flex items-center justify-center text-zinc-200 hover:text-rose-400 active:scale-90 transition">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                `;
+                grid.appendChild(cell);
+            });
+        }
+
+        function renderSessionSwitcher() {
+            const select = document.getElementById('session-switcher');
+            const sessions = getAllSessions();
+            select.innerHTML = '';
+            sessions.forEach((sid) => {
+                const prof = getSessionProfile(sid);
+                const opt = document.createElement('option');
+                opt.value = sid;
+                opt.textContent = sid === currentSessionId
+                    ? `${prof.displayName} (${sid}) • Active`
+                    : `${prof.displayName} (${sid})`;
+                if (sid === currentSessionId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        async function createNewIsolatedSession() {
+            const newId = generateSessionId();
+            const sessions = getAllSessions();
+            sessions.push(newId);
+            saveAllSessions(sessions);
+
+            saveSessionProfile(newId, {
+                displayName: `Guest ${newId.slice(-2)}`,
+                handle: `@guest.${newId.slice(-2).toLowerCase()}`,
+                bio: 'Brand new isolated space.',
+                avatarDataUrl: '',
+                subscribers: DEFAULT_SUBSCRIBERS,
+                totalLikes: DEFAULT_BASE_LIKES
+            });
+
+            currentSessionId = newId;
+            localStorage.setItem(ACTIVE_SESSION_KEY, currentSessionId);
+            inboxNotifications = [];
+
+            await loadCurrentSessionData();
+            handleTabPress('home', true);
+            showToast('Switched to a different person (Empty private feed)');
+        }
+
+        async function switchSession(newSessionId) {
+            if (!newSessionId || newSessionId === currentSessionId) return;
+            currentSessionId = newSessionId;
+            localStorage.setItem(ACTIVE_SESSION_KEY, currentSessionId);
+            inboxNotifications = [];
+            await loadCurrentSessionData();
+            showToast(`Loaded ${userProfile.displayName}'s private space`);
+        }
+
+        /* ==========================================================================
+           12. UTILITIES & INITIALIZATION
+           ========================================================================== */
+        function formatCount(n) {
+            if (n >= 1000000000) return (n / 1000000000).toFixed(2).replace(/\.00$/, '') + 'B';
+            if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+            return String(n);
+        }
+
+        function timeAgo(ts) {
+            const sec = Math.floor((Date.now() - ts) / 1000);
+            if (sec < 15) return 'just now';
+            if (sec < 60) return `${sec}s ago`;
+            const min = Math.floor(sec / 60);
+            if (min < 60) return `${min}m ago`;
+            const hr = Math.floor(min / 60);
+            if (hr < 24) return `${hr}h ago`;
+            return `${Math.floor(hr / 24)}d ago`;
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        let toastTimeout = null;
+        function showToast(msg) {
+            const banner = document.getElementById('toast-banner');
+            document.getElementById('toast-text').textContent = msg;
+            banner.classList.remove('opacity-0');
+            banner.classList.add('opacity-100');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                banner.classList.remove('opacity-100');
+                banner.classList.add('opacity-0');
+            }, 2800);
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            updateMuteHeaderIcon();
+            setupPullToRefresh();
+            await loadCurrentSessionData();
+            startHighVelocityLikeEngine();
+            scheduleNextAIComment();
+        });
+    </script>
+</body>
+</html>
